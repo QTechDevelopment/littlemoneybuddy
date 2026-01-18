@@ -25,82 +25,58 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom Terminal-Style CSS
+# Retro Monochrome Terminal CSS
 st.markdown("""
 <style>
-    /* Import terminal-style fonts */
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Fira+Code:wght@400;500;700&display=swap');
+    /* Import terminal-style font */
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
     
-    /* Global terminal styling */
+    /* Global monochrome styling */
     .stApp {
-        background-color: #0a0e14 !important;
-        background-image: 
-            repeating-linear-gradient(
-                0deg,
-                rgba(0, 255, 65, 0.03) 0px,
-                rgba(0, 255, 65, 0.03) 1px,
-                transparent 1px,
-                transparent 2px
-            );
+        background-color: black !important;
+        font-family: 'JetBrains Mono', monospace !important;
     }
     
-    /* Override Streamlit's default text colors */
+    /* Override text colors to white */
     .stApp, .stApp p, .stApp span, .stApp label, .stApp div {
-        font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+        font-family: 'JetBrains Mono', monospace !important;
+        color: white !important;
     }
     
-    /* Main header - terminal prompt style */
+    /* Headers */
     .main-header {
         font-size: 2rem;
-        color: #00ff41;
+        color: white;
         font-weight: 700;
         margin-bottom: 1rem;
         font-family: 'JetBrains Mono', monospace !important;
-        text-shadow: 0 0 10px rgba(0, 255, 65, 0.7), 0 0 20px rgba(0, 255, 65, 0.5);
         letter-spacing: 2px;
     }
     
     .main-header::before {
         content: "$ ";
-        color: #00d4ff;
-        text-shadow: 0 0 10px rgba(0, 212, 255, 0.7);
     }
     
-    /* Sub headers */
     .sub-header {
         font-size: 1.2rem;
-        color: #00d4ff;
+        color: white;
         margin-top: 1.5rem;
         margin-bottom: 0.5rem;
         font-family: 'JetBrains Mono', monospace !important;
-        text-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
-        border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+        border-bottom: 1px dashed white;
         padding-bottom: 0.5rem;
     }
     
     .sub-header::before {
         content: "> ";
-        color: #00ff41;
     }
     
-    /* Terminal metric card */
-    .metric-card {
-        background-color: rgba(10, 14, 20, 0.9);
+    /* Cards */
+    .metric-card, .agent-card, .terminal-box {
+        background-color: black;
         padding: 1rem;
-        border-radius: 4px;
-        border: 1px solid #00ff41;
-        box-shadow: 0 0 10px rgba(0, 255, 65, 0.2), inset 0 0 20px rgba(0, 0, 0, 0.5);
-    }
-    
-    /* Agent card - terminal window style */
-    .agent-card {
-        background-color: rgba(10, 14, 20, 0.95);
-        padding: 1rem;
-        border-radius: 4px;
-        border: 1px solid #00d4ff;
+        border: 1px solid white;
         margin: 0.5rem 0;
-        box-shadow: 0 0 10px rgba(0, 212, 255, 0.15);
-        position: relative;
     }
     
     .agent-card::before {
@@ -108,203 +84,94 @@ st.markdown("""
         position: absolute;
         top: -10px;
         left: 10px;
-        background: #0a0e14;
+        background: black;
         padding: 0 5px;
-        color: #00d4ff;
+        color: white;
         font-size: 0.7rem;
     }
     
-    /* Status colors */
-    .bullish {
-        color: #00ff41 !important;
+    /* Status colors - all white for monochrome */
+    .bullish, .bearish, .neutral {
+        color: white !important;
         font-weight: bold;
-        text-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
-    }
-    .bearish {
-        color: #ff3e3e !important;
-        font-weight: bold;
-        text-shadow: 0 0 8px rgba(255, 62, 62, 0.5);
-    }
-    .neutral {
-        color: #ffb000 !important;
-        font-weight: bold;
-        text-shadow: 0 0 8px rgba(255, 176, 0, 0.5);
     }
     
-    /* Sidebar styling */
+    /* Sidebar */
     section[data-testid="stSidebar"] {
-        background-color: #0d1117 !important;
-        border-right: 1px solid #00ff41 !important;
+        background-color: black !important;
+        border-right: 1px solid white !important;
     }
     
     section[data-testid="stSidebar"] .stMarkdown {
-        color: #c0c0c0 !important;
+        color: white !important;
     }
     
-    /* Input fields - terminal style */
+    /* Input fields */
     .stTextInput input, .stNumberInput input, .stSelectbox select {
-        background-color: #0d1117 !important;
-        color: #00ff41 !important;
-        border: 1px solid #00ff41 !important;
+        background-color: black !important;
+        color: white !important;
+        border: 1px solid white !important;
         font-family: 'JetBrains Mono', monospace !important;
     }
     
-    .stTextInput input:focus, .stNumberInput input:focus {
-        box-shadow: 0 0 10px rgba(0, 255, 65, 0.4) !important;
-    }
-    
-    /* Buttons - terminal style */
+    /* Buttons */
     .stButton > button {
-        background-color: transparent !important;
-        color: #00ff41 !important;
-        border: 1px solid #00ff41 !important;
+        background-color: black !important;
+        color: white !important;
+        border: 1px solid white !important;
         font-family: 'JetBrains Mono', monospace !important;
         text-transform: uppercase;
         letter-spacing: 1px;
-        transition: all 0.3s ease;
     }
     
     .stButton > button:hover {
-        background-color: rgba(0, 255, 65, 0.1) !important;
-        box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
-        text-shadow: 0 0 10px rgba(0, 255, 65, 0.8);
+        background-color: #333333 !important;
     }
     
-    .stButton > button[kind="primary"] {
-        background-color: rgba(0, 255, 65, 0.15) !important;
-    }
-    
-    /* Info/Warning boxes */
-    .stAlert {
-        background-color: rgba(10, 14, 20, 0.9) !important;
-        border: 1px solid #00d4ff !important;
-        color: #c0c0c0 !important;
-    }
-    
-    /* Metrics styling */
-    [data-testid="stMetricValue"] {
-        color: #00ff41 !important;
-        font-family: 'JetBrains Mono', monospace !important;
-        text-shadow: 0 0 8px rgba(0, 255, 65, 0.4);
-    }
-    
-    [data-testid="stMetricLabel"] {
-        color: #00d4ff !important;
-        font-family: 'JetBrains Mono', monospace !important;
-    }
-    
-    [data-testid="stMetricDelta"] {
+    /* Metrics */
+    [data-testid="stMetricValue"], [data-testid="stMetricLabel"], [data-testid="stMetricDelta"] {
+        color: white !important;
         font-family: 'JetBrains Mono', monospace !important;
     }
     
     /* Progress bars */
     .stProgress > div > div {
-        background-color: #00ff41 !important;
-        box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+        background-color: white !important;
     }
     
-    /* Expander */
-    .streamlit-expanderHeader {
-        background-color: rgba(10, 14, 20, 0.9) !important;
-        border: 1px solid #00d4ff !important;
-        color: #00d4ff !important;
-    }
-    
-    /* Data frames */
-    .stDataFrame {
-        border: 1px solid #00ff41 !important;
-    }
-    
-    /* Scrollbar styling */
+    /* Scrollbar */
     ::-webkit-scrollbar {
         width: 8px;
         height: 8px;
     }
     
     ::-webkit-scrollbar-track {
-        background: #0a0e14;
+        background: black;
     }
     
     ::-webkit-scrollbar-thumb {
-        background: #00ff41;
-        border-radius: 4px;
+        background: white;
     }
     
-    ::-webkit-scrollbar-thumb:hover {
-        background: #00d4ff;
+    /* ASCII art header */
+    .ascii-header {
+        font-family: 'JetBrains Mono', monospace !important;
+        color: white;
+        font-size: 0.6rem;
+        line-height: 1.1;
+        white-space: pre;
+        margin-bottom: 1rem;
     }
     
-    /* Blinking cursor animation */
-    @keyframes blink {
-        0%, 50% { opacity: 1; }
-        51%, 100% { opacity: 0; }
-    }
-    
-    .cursor {
-        display: inline-block;
-        width: 10px;
-        height: 1.2em;
-        background-color: #00ff41;
-        margin-left: 2px;
-        animation: blink 1s infinite;
-    }
-    
-    /* Terminal box */
-    .terminal-box {
-        background-color: rgba(10, 14, 20, 0.95);
-        border: 1px solid #00ff41;
-        border-radius: 4px;
-        padding: 1rem;
-        margin: 0.5rem 0;
-        box-shadow: 0 0 15px rgba(0, 255, 65, 0.1), inset 0 0 30px rgba(0, 0, 0, 0.5);
-    }
-    
-    /* System message style */
+    /* System message */
     .sys-msg {
-        color: #00d4ff;
+        color: white;
         font-size: 0.9rem;
         font-family: 'JetBrains Mono', monospace !important;
     }
     
     .sys-msg::before {
         content: "[SYS] ";
-        color: #ffb000;
-    }
-    
-    /* ASCII art header styling */
-    .ascii-header {
-        font-family: 'JetBrains Mono', monospace !important;
-        color: #00ff41;
-        font-size: 0.6rem;
-        line-height: 1.1;
-        text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
-        white-space: pre;
-        margin-bottom: 1rem;
-    }
-    
-    /* Glitch effect for headers */
-    @keyframes glitch {
-        0% { text-shadow: 0 0 10px rgba(0, 255, 65, 0.7), 0 0 20px rgba(0, 255, 65, 0.5); }
-        25% { text-shadow: -2px 0 #ff3e3e, 2px 0 #00d4ff; }
-        50% { text-shadow: 0 0 10px rgba(0, 255, 65, 0.7), 0 0 20px rgba(0, 255, 65, 0.5); }
-        75% { text-shadow: 2px 0 #ff3e3e, -2px 0 #00d4ff; }
-        100% { text-shadow: 0 0 10px rgba(0, 255, 65, 0.7), 0 0 20px rgba(0, 255, 65, 0.5); }
-    }
-    
-    .glitch-text {
-        animation: glitch 3s infinite;
-    }
-    
-    /* Accessibility: Respect user's motion preferences */
-    @media (prefers-reduced-motion: reduce) {
-        .glitch-text {
-            animation: none;
-            text-shadow: 0 0 10px rgba(0, 255, 65, 0.7), 0 0 20px rgba(0, 255, 65, 0.5);
-        }
-        .cursor {
-            animation: none;
-            opacity: 1;
-        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -334,8 +201,8 @@ def create_price_chart(df, ticker):
         low=df['Low'],
         close=df['Close'],
         name='Price',
-        increasing_line_color='#00ff41',
-        decreasing_line_color='#ff3e3e'
+        increasing_line_color='#ffffff',
+        decreasing_line_color='#555555'
     ))
     
     # Add moving averages if enough data
@@ -344,7 +211,7 @@ def create_price_chart(df, ticker):
         fig.add_trace(go.Scatter(
             x=df.index, y=ma20,
             name='MA20',
-            line=dict(color='#ffb000', width=1)
+            line=dict(color='#aaaaaa', width=1, dash='dot')
         ))
     
     if len(df) >= 50:
@@ -352,23 +219,17 @@ def create_price_chart(df, ticker):
         fig.add_trace(go.Scatter(
             x=df.index, y=ma50,
             name='MA50',
-            line=dict(color='#00d4ff', width=1)
+            line=dict(color='#ffffff', width=1)
         ))
     
     fig.update_layout(
-        title=dict(text=f">> {ticker} PRICE_DATA", font=dict(color='#00ff41', family='JetBrains Mono, monospace')),
-        yaxis_title="PRICE (USD)",
-        xaxis_title="TIMESTAMP",
-        template="plotly_dark",
-        height=400,
-        xaxis_rangeslider_visible=False,
-        paper_bgcolor='rgba(10, 14, 20, 0.9)',
-        plot_bgcolor='rgba(10, 14, 20, 0.9)',
-        font=dict(family='JetBrains Mono, monospace', color='#00d4ff'),
-        xaxis=dict(gridcolor='rgba(0, 255, 65, 0.1)', showgrid=True),
-        yaxis=dict(gridcolor='rgba(0, 255, 65, 0.1)', showgrid=True)
+        plot_bgcolor='black',
+        paper_bgcolor='black',
+        font=dict(color='white', family='JetBrains Mono'),
+        xaxis=dict(showgrid=False, color='white'),
+        yaxis=dict(showgrid=True, gridcolor='#333333', color='white'),
+        margin=dict(l=10, r=10, t=10, b=10)
     )
-    
     return fig
 
 
