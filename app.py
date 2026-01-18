@@ -9,12 +9,229 @@ import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime, timedelta
+from io import BytesIO
+from collections import Counter
 
 from game_theory_agent import (
     MultiAgentSystem, AgentStrategy, GameTheoryAgent
 )
 from sentiment_analyzer import SentimentAnalyzer, generate_mock_news
 from stock_data import StockDataFetcher, BiweeklyInvestmentStrategy
+
+
+def parse_excel_tickers(uploaded_file) -> list:
+    """
+    Parse Excel file to extract stock tickers.
+    Looks for columns named 'ticker', 'symbol', 'stock', or the first column.
+    
+    Args:
+        uploaded_file: Streamlit UploadedFile object
+        
+    Returns:
+        List of unique ticker symbols
+    """
+    try:
+        df = pd.read_excel(uploaded_file, engine='openpyxl')
+        
+        if df.empty:
+            return []
+        
+        # Look for common column names for tickers
+        ticker_columns = ['ticker', 'symbol', 'stock', 'tickers', 'symbols', 'stocks']
+        
+        # Find the column with tickers (case-insensitive)
+        ticker_col = None
+        for col in df.columns:
+            if str(col).lower().strip() in ticker_columns:
+                ticker_col = col
+                break
+        
+        # If no standard column found, use the first column
+        if ticker_col is None:
+            ticker_col = df.columns[0]
+        
+        # Extract tickers, clean and deduplicate
+        tickers = df[ticker_col].dropna().astype(str).str.upper().str.strip().unique().tolist()
+        
+        # Filter out empty strings - allow alphanumeric tickers and common formats like BRK.B
+        tickers = [t for t in tickers if t and len(t) <= 10 and t.replace('.', '').replace('-', '').isalnum()]
+        
+        return tickers[:50]  # Limit to 50 tickers for performance
+    except Exception as e:
+        st.error(f"Error parsing Excel file: {e}")
+        return []
+
+
+def analyze_portfolio(tickers: list, period: str, investment_amount: float, 
+                     stock_fetcher, agent_system, sentiment_analyzer, 
+                     investment_strategy) -> list:
+    """
+    Analyze multiple stocks and return portfolio breakdown.
+    
+    Args:
+        tickers: List of stock ticker symbols
+        period: Analysis period
+        investment_amount: Total investment amount
+        stock_fetcher: StockDataFetcher instance
+        agent_system: MultiAgentSystem instance
+        sentiment_analyzer: SentimentAnalyzer instance
+        investment_strategy: BiweeklyInvestmentStrategy instance
+        
+    Returns:
+        List of analysis results for each stock
+    """
+    if not tickers:
+        return []
+    
+    results = []
+    per_stock_amount = investment_amount / len(tickers)
+    
+    for ticker in tickers:
+        try:
+            stock_data = stock_fetcher.get_stock_data(ticker, period)
+            
+            if stock_data is None or stock_data.empty:
+                results.append({
+                    'ticker': ticker,
+                    'status': 'error',
+                    'error': 'Could not fetch data'
+                })
+                continue
+            
+            stock_info = stock_fetcher.get_stock_info(ticker)
+            technical_indicators = stock_fetcher.calculate_technical_indicators(stock_data)
+            
+            # Generate sentiment analysis
+            prices = stock_data['Close'].tolist()
+            volumes = stock_data['Volume'].tolist()
+            news_texts = generate_mock_news(ticker, np.random.random())
+            
+            sentiment_result = sentiment_analyzer.calculate_composite_sentiment(
+                news_texts=news_texts,
+                prices=prices,
+                volumes=volumes
+            )
+            
+            composite_sentiment = sentiment_result['composite']
+            sentiment_signal = sentiment_analyzer.get_sentiment_signal(composite_sentiment)
+            
+            # Run agent simulation
+            market_data = {
+                'price': prices[-1] if prices else 0,
+                'volume': volumes[-1] if volumes else 0,
+                'technical': technical_indicators
+            }
+            
+            agent_decisions = agent_system.run_simulation(market_data, composite_sentiment)
+            consensus = agent_system.get_consensus_decision(agent_decisions)
+            
+            # Calculate allocation using a temporary strategy to avoid side effects
+            temp_strategy = BiweeklyInvestmentStrategy(investment_amount=per_stock_amount)
+            allocation = temp_strategy.calculate_biweekly_allocation(
+                agent_decisions, composite_sentiment
+            )
+            
+            results.append({
+                'ticker': ticker,
+                'status': 'success',
+                'name': stock_info.get('name', ticker),
+                'sector': stock_info.get('sector', 'Unknown'),
+                'current_price': technical_indicators.get('Current_Price', 0),
+                'daily_change': technical_indicators.get('Daily_Change', 0),
+                'sentiment': composite_sentiment,
+                'sentiment_signal': sentiment_signal,
+                'consensus': consensus,
+                'action': allocation['action'],
+                'confidence': allocation['confidence'],
+                'recommended_amount': allocation['amount'],
+                'buy_votes': allocation['agent_consensus']['buy'],
+                'sell_votes': allocation['agent_consensus']['sell'],
+                'hold_votes': allocation['agent_consensus']['hold']
+            })
+        except Exception as e:
+            results.append({
+                'ticker': ticker,
+                'status': 'error',
+                'error': str(e)
+            })
+    
+    return results
+
+
+def create_portfolio_breakdown_chart(results: list):
+    """Create portfolio breakdown visualization."""
+    # Filter successful results
+    valid_results = [r for r in results if r['status'] == 'success']
+    
+    if not valid_results:
+        return None
+    
+    # Action distribution using Counter for efficiency
+    action_counter = Counter(r['action'] for r in valid_results)
+    action_counts = {'BUY': action_counter.get('BUY', 0), 
+                     'SELL': action_counter.get('SELL', 0), 
+                     'HOLD': action_counter.get('HOLD', 0)}
+    
+    fig = go.Figure(data=[
+        go.Pie(
+            labels=list(action_counts.keys()),
+            values=list(action_counts.values()),
+            marker_colors=['#00ff41', '#ff3e3e', '#ffb000'],
+            textinfo='label+percent',
+            textfont=dict(color='#0a0e14', family='JetBrains Mono, monospace'),
+            hole=0.4
+        )
+    ])
+    
+    fig.update_layout(
+        title=dict(text=">> PORTFOLIO_ACTION_BREAKDOWN", 
+                   font=dict(color='#00ff41', family='JetBrains Mono, monospace')),
+        paper_bgcolor='rgba(10, 14, 20, 0.9)',
+        font=dict(family='JetBrains Mono, monospace', color='#00d4ff'),
+        height=300,
+        showlegend=True,
+        legend=dict(font=dict(color='#00d4ff'))
+    )
+    
+    return fig
+
+
+def create_sector_breakdown_chart(results: list):
+    """Create sector distribution visualization."""
+    valid_results = [r for r in results if r['status'] == 'success']
+    
+    if not valid_results:
+        return None
+    
+    # Use Counter for efficient sector counting
+    sectors = Counter(r.get('sector', 'Unknown') for r in valid_results)
+    
+    fig = go.Figure(data=[
+        go.Bar(
+            x=list(sectors.keys()),
+            y=list(sectors.values()),
+            marker_color='#00d4ff',
+            text=list(sectors.values()),
+            textposition='auto',
+            textfont=dict(color='#0a0e14', family='JetBrains Mono, monospace')
+        )
+    ])
+    
+    fig.update_layout(
+        title=dict(text=">> SECTOR_DISTRIBUTION", 
+                   font=dict(color='#00ff41', family='JetBrains Mono, monospace')),
+        yaxis_title="STOCK_COUNT",
+        xaxis_title="SECTOR",
+        template="plotly_dark",
+        height=300,
+        paper_bgcolor='rgba(10, 14, 20, 0.9)',
+        plot_bgcolor='rgba(10, 14, 20, 0.9)',
+        font=dict(family='JetBrains Mono, monospace', color='#00d4ff'),
+        xaxis=dict(gridcolor='rgba(0, 255, 65, 0.1)', tickangle=-45),
+        yaxis=dict(gridcolor='rgba(0, 255, 65, 0.1)')
+    )
+    
+    return fig
 
 
 # Page configuration - Terminal Style
@@ -531,12 +748,36 @@ def main():
         
         st.markdown("#### 📡 INPUT PARAMETERS")
         
-        # Stock selection
-        ticker = st.text_input(
-            ">> TICKER_SYMBOL",
-            value="AAPL",
-            help="Enter stock ticker symbol (e.g., AAPL, GOOGL, MSFT)"
-        ).upper()
+        # Input mode selection
+        input_mode = st.radio(
+            ">> INPUT_MODE",
+            options=["Single Stock", "Excel Upload"],
+            help="Choose to analyze a single stock or upload an Excel file with multiple stocks"
+        )
+        
+        # Excel file upload (only show if Excel mode selected)
+        uploaded_file = None
+        if input_mode == "Excel Upload":
+            st.markdown("""
+            <div class="terminal-box">
+                <span style="color: #ffb000;">FORMAT:</span> Excel (.xlsx)<br>
+                <small style="color: #888;">Column: ticker, symbol, or stock</small>
+            </div>
+            """, unsafe_allow_html=True)
+            uploaded_file = st.file_uploader(
+                ">> UPLOAD_EXCEL",
+                type=["xlsx"],
+                help="Upload Excel file with stock tickers"
+            )
+        
+        # Stock selection (only show if single mode)
+        ticker = ""
+        if input_mode == "Single Stock":
+            ticker = st.text_input(
+                ">> TICKER_SYMBOL",
+                value="AAPL",
+                help="Enter stock ticker symbol (e.g., AAPL, GOOGL, MSFT)"
+            ).upper()
         
         # Time period
         period = st.selectbox(
@@ -577,228 +818,363 @@ def main():
     
     # Main content
     if run_analysis:
-        with st.spinner(f"Analyzing {ticker}..."):
-            # Fetch stock data
-            stock_data = st.session_state.stock_fetcher.get_stock_data(ticker, period)
-            
-            if stock_data is None or stock_data.empty:
-                st.error(f"❌ Could not fetch data for {ticker}. Please check the ticker symbol.")
-                return
-            
-            stock_info = st.session_state.stock_fetcher.get_stock_info(ticker)
-            technical_indicators = st.session_state.stock_fetcher.calculate_technical_indicators(stock_data)
-            
-            # Generate sentiment analysis
-            prices = stock_data['Close'].tolist()
-            volumes = stock_data['Volume'].tolist()
-            news_texts = generate_mock_news(ticker, np.random.random())
-            
-            sentiment_result = st.session_state.sentiment_analyzer.calculate_composite_sentiment(
-                news_texts=news_texts,
-                prices=prices,
-                volumes=volumes
-            )
-            
-            composite_sentiment = sentiment_result['composite']
-            sentiment_signal = st.session_state.sentiment_analyzer.get_sentiment_signal(composite_sentiment)
-            
-            # Run agent simulation
-            market_data = {
-                'price': prices[-1] if prices else 0,
-                'volume': volumes[-1] if volumes else 0,
-                'technical': technical_indicators
-            }
-            
-            agent_decisions = st.session_state.agent_system.run_simulation(
-                market_data, composite_sentiment
-            )
-            
-            # Calculate Nash equilibrium
-            nash_equilibrium = st.session_state.agent_system.calculate_nash_equilibrium(agent_decisions)
-            consensus = st.session_state.agent_system.get_consensus_decision(agent_decisions)
-            
-            # Calculate investment allocation
-            allocation = st.session_state.investment_strategy.calculate_biweekly_allocation(
-                agent_decisions, composite_sentiment
-            )
-            
-            # Display results
-            st.markdown('<div class="sub-header">📡 STOCK_OVERVIEW</div>', unsafe_allow_html=True)
-            
-            col1, col2, col3, col4 = st.columns(4)
-            
-            with col1:
-                current_price = technical_indicators.get('Current_Price', 0)
-                st.metric(
-                    "CURRENT_PRICE",
-                    f"${current_price:.2f}",
-                    f"{technical_indicators.get('Daily_Change', 0):.2f}%"
-                )
-            
-            with col2:
-                st.metric(
-                    "ENTITY",
-                    stock_info.get('name', ticker)[:20],
-                    stock_info.get('sector', 'N/A')
-                )
-            
-            with col3:
-                sentiment_class = sentiment_signal.lower()
-                st.metric(
-                    "SENTIMENT",
-                    sentiment_signal,
-                    f"{composite_sentiment*100:.1f}%"
-                )
-            
-            with col4:
-                st.metric(
-                    "CONSENSUS",
-                    consensus,
-                    f"{len([d for d in agent_decisions if d.action == consensus])}/{len(agent_decisions)} agents"
-                )
-            
-            # Charts row
-            st.markdown('<div class="sub-header">📊 MARKET_ANALYSIS</div>', unsafe_allow_html=True)
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                price_chart = create_price_chart(stock_data, ticker)
-                st.plotly_chart(price_chart, use_container_width=True)
-            
-            with col2:
-                sentiment_gauge = create_sentiment_gauge(composite_sentiment)
-                st.plotly_chart(sentiment_gauge, use_container_width=True)
+        # Handle Excel upload mode
+        if input_mode == "Excel Upload":
+            if uploaded_file is None:
+                st.error("❌ Please upload an Excel file to analyze.")
+            else:
+                tickers = parse_excel_tickers(uploaded_file)
                 
-                # Sentiment components
-                st.markdown("**>> SENTIMENT_COMPONENTS:**")
-                for component, value in sentiment_result['components'].items():
-                    st.progress(value, text=f"{component.upper()}: {value*100:.1f}%")
-            
-            # Agent decisions
-            st.markdown('<div class="sub-header">🤖 AGENT_MATRIX // GAME_THEORY</div>', 
-                       unsafe_allow_html=True)
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                agent_chart = create_agent_decision_chart(agent_decisions)
-                st.plotly_chart(agent_chart, use_container_width=True)
-                
-                # Detailed agent decisions
-                st.markdown("**>> AGENT_ANALYSIS:**")
-                for decision in agent_decisions:
-                    action_color = "bullish" if decision.action == "BUY" else "bearish" if decision.action == "SELL" else "neutral"
-                    st.markdown(f"""
-                    <div class="agent-card">
-                        <strong style="color: #00d4ff;">{decision.agent_id}</strong> <span style="color: #888;">// {decision.strategy.value.upper()}</span><br>
-                        <span style="color: #888;">ACTION:</span> <span class="{action_color}">{decision.action}</span><br>
-                        <span style="color: #888;">CONF:</span> <span style="color: #00d4ff;">{decision.confidence*100:.1f}%</span><br>
-                        <span style="color: #888;">ALLOC:</span> <span style="color: #ffb000;">{decision.allocation:.1f}%</span>
+                if not tickers:
+                    st.error("❌ No valid tickers found in the Excel file. Ensure it has a column named 'ticker', 'symbol', or 'stock'.")
+                else:
+                    with st.spinner(f"Analyzing {len(tickers)} stocks from Excel..."):
+                        # Analyze portfolio
+                        results = analyze_portfolio(
+                            tickers=tickers,
+                            period=period,
+                            investment_amount=investment_amount,
+                            stock_fetcher=st.session_state.stock_fetcher,
+                            agent_system=st.session_state.agent_system,
+                            sentiment_analyzer=st.session_state.sentiment_analyzer,
+                            investment_strategy=st.session_state.investment_strategy
+                        )
+                        
+                        # Display portfolio breakdown
+                        st.markdown('<div class="sub-header">📊 PORTFOLIO_BREAKDOWN</div>', unsafe_allow_html=True)
+                        
+                        # Summary metrics
+                        valid_results = [r for r in results if r['status'] == 'success']
+                        error_results = [r for r in results if r['status'] == 'error']
+                        
+                        col1, col2, col3, col4 = st.columns(4)
+                        
+                        with col1:
+                            st.metric("TOTAL_STOCKS", len(tickers))
+                        
+                        with col2:
+                            st.metric("ANALYZED", len(valid_results))
+                        
+                        with col3:
+                            buy_count = len([r for r in valid_results if r['action'] == 'BUY'])
+                            st.metric("BUY_SIGNALS", buy_count)
+                        
+                        with col4:
+                            avg_sentiment = np.mean([r['sentiment'] for r in valid_results]) if valid_results else 0
+                            st.metric("AVG_SENTIMENT", f"{avg_sentiment*100:.1f}%")
+                        
+                        # Charts
+                        st.markdown('<div class="sub-header">📈 ANALYSIS_CHARTS</div>', unsafe_allow_html=True)
+                        
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            action_chart = create_portfolio_breakdown_chart(results)
+                            if action_chart:
+                                st.plotly_chart(action_chart, use_container_width=True)
+                        
+                        with col2:
+                            sector_chart = create_sector_breakdown_chart(results)
+                            if sector_chart:
+                                st.plotly_chart(sector_chart, use_container_width=True)
+                        
+                        # Detailed stock breakdown table
+                        st.markdown('<div class="sub-header">📋 STOCK_DETAILS</div>', unsafe_allow_html=True)
+                        
+                        if valid_results:
+                            # Create summary dataframe
+                            df_data = []
+                            for r in valid_results:
+                                action_emoji = "🟢" if r['action'] == 'BUY' else "🔴" if r['action'] == 'SELL' else "🟡"
+                                df_data.append({
+                                    'Ticker': r['ticker'],
+                                    'Name': r['name'][:25] if len(r['name']) > 25 else r['name'],
+                                    'Sector': r['sector'],
+                                    'Price': f"${r['current_price']:.2f}",
+                                    'Change': f"{r['daily_change']:.2f}%",
+                                    'Sentiment': r['sentiment_signal'],
+                                    'Action': f"{action_emoji} {r['action']}",
+                                    'Confidence': f"{r['confidence']*100:.1f}%",
+                                    'Rec. Amount': f"${r['recommended_amount']:.2f}"
+                                })
+                            
+                            df_summary = pd.DataFrame(df_data)
+                            st.dataframe(df_summary, use_container_width=True, hide_index=True)
+                            
+                            # Investment allocation summary
+                            st.markdown('<div class="sub-header">💰 ALLOCATION_SUMMARY</div>', unsafe_allow_html=True)
+                            
+                            total_buy = sum(r['recommended_amount'] for r in valid_results if r['action'] == 'BUY')
+                            total_sell = sum(r['recommended_amount'] for r in valid_results if r['action'] == 'SELL')
+                            total_hold = sum(r['recommended_amount'] for r in valid_results if r['action'] == 'HOLD')
+                            
+                            col1, col2, col3 = st.columns(3)
+                            
+                            with col1:
+                                st.markdown(f"""
+                                <div class="terminal-box">
+                                    <span class="bullish">BUY_ALLOCATION</span><br>
+                                    <span style="color: #00ff41; font-size: 1.5rem;">${total_buy:.2f}</span><br>
+                                    <small style="color: #888;">{len([r for r in valid_results if r['action'] == 'BUY'])} stocks</small>
+                                </div>
+                                """, unsafe_allow_html=True)
+                            
+                            with col2:
+                                st.markdown(f"""
+                                <div class="terminal-box">
+                                    <span class="bearish">SELL_SIGNALS</span><br>
+                                    <span style="color: #ff3e3e; font-size: 1.5rem;">${total_sell:.2f}</span><br>
+                                    <small style="color: #888;">{len([r for r in valid_results if r['action'] == 'SELL'])} stocks</small>
+                                </div>
+                                """, unsafe_allow_html=True)
+                            
+                            with col3:
+                                st.markdown(f"""
+                                <div class="terminal-box">
+                                    <span class="neutral">HOLD_ALLOCATION</span><br>
+                                    <span style="color: #ffb000; font-size: 1.5rem;">${total_hold:.2f}</span><br>
+                                    <small style="color: #888;">{len([r for r in valid_results if r['action'] == 'HOLD'])} stocks</small>
+                                </div>
+                                """, unsafe_allow_html=True)
+                        
+                        # Show errors if any
+                        if error_results:
+                            with st.expander(f"⚠️ FAILED_ANALYSIS ({len(error_results)} stocks)"):
+                                for r in error_results:
+                                    st.markdown(f"""
+                                    <div style="padding: 0.3rem 0; border-bottom: 1px solid rgba(255, 62, 62, 0.2);">
+                                        <span style="color: #ff3e3e;">✗</span> <span style="color: #c0c0c0;">{r['ticker']}</span>
+                                        <small style="color: #888;"> - {r.get('error', 'Unknown error')}</small>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+        
+        # Handle single stock mode
+        else:
+            if not ticker:
+                st.error("❌ Please enter a ticker symbol.")
+            else:
+                with st.spinner(f"Analyzing {ticker}..."):
+                    # Fetch stock data
+                    stock_data = st.session_state.stock_fetcher.get_stock_data(ticker, period)
+                    
+                    if stock_data is None or stock_data.empty:
+                        st.error(f"❌ Could not fetch data for {ticker}. Please check the ticker symbol.")
+                        return
+                    
+                    stock_info = st.session_state.stock_fetcher.get_stock_info(ticker)
+                    technical_indicators = st.session_state.stock_fetcher.calculate_technical_indicators(stock_data)
+                    
+                    # Generate sentiment analysis
+                    prices = stock_data['Close'].tolist()
+                    volumes = stock_data['Volume'].tolist()
+                    news_texts = generate_mock_news(ticker, np.random.random())
+                    
+                    sentiment_result = st.session_state.sentiment_analyzer.calculate_composite_sentiment(
+                        news_texts=news_texts,
+                        prices=prices,
+                        volumes=volumes
+                    )
+                    
+                    composite_sentiment = sentiment_result['composite']
+                    sentiment_signal = st.session_state.sentiment_analyzer.get_sentiment_signal(composite_sentiment)
+                    
+                    # Run agent simulation
+                    market_data = {
+                        'price': prices[-1] if prices else 0,
+                        'volume': volumes[-1] if volumes else 0,
+                        'technical': technical_indicators
+                    }
+                    
+                    agent_decisions = st.session_state.agent_system.run_simulation(
+                        market_data, composite_sentiment
+                    )
+                    
+                    # Calculate Nash equilibrium
+                    nash_equilibrium = st.session_state.agent_system.calculate_nash_equilibrium(agent_decisions)
+                    consensus = st.session_state.agent_system.get_consensus_decision(agent_decisions)
+                    
+                    # Calculate investment allocation
+                    allocation = st.session_state.investment_strategy.calculate_biweekly_allocation(
+                        agent_decisions, composite_sentiment
+                    )
+                    
+                    # Display results
+                    st.markdown('<div class="sub-header">📡 STOCK_OVERVIEW</div>', unsafe_allow_html=True)
+                    
+                    col1, col2, col3, col4 = st.columns(4)
+                    
+                    with col1:
+                        current_price = technical_indicators.get('Current_Price', 0)
+                        st.metric(
+                            "CURRENT_PRICE",
+                            f"${current_price:.2f}",
+                            f"{technical_indicators.get('Daily_Change', 0):.2f}%"
+                        )
+                    
+                    with col2:
+                        st.metric(
+                            "ENTITY",
+                            stock_info.get('name', ticker)[:20],
+                            stock_info.get('sector', 'N/A')
+                        )
+                    
+                    with col3:
+                        sentiment_class = sentiment_signal.lower()
+                        st.metric(
+                            "SENTIMENT",
+                            sentiment_signal,
+                            f"{composite_sentiment*100:.1f}%"
+                        )
+                    
+                    with col4:
+                        st.metric(
+                            "CONSENSUS",
+                            consensus,
+                            f"{len([d for d in agent_decisions if d.action == consensus])}/{len(agent_decisions)} agents"
+                        )
+                    
+                    # Charts row
+                    st.markdown('<div class="sub-header">📊 MARKET_ANALYSIS</div>', unsafe_allow_html=True)
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        price_chart = create_price_chart(stock_data, ticker)
+                        st.plotly_chart(price_chart, use_container_width=True)
+                    
+                    with col2:
+                        sentiment_gauge = create_sentiment_gauge(composite_sentiment)
+                        st.plotly_chart(sentiment_gauge, use_container_width=True)
+                        
+                        # Sentiment components
+                        st.markdown("**>> SENTIMENT_COMPONENTS:**")
+                        for component, value in sentiment_result['components'].items():
+                            st.progress(value, text=f"{component.upper()}: {value*100:.1f}%")
+                    
+                    # Agent decisions
+                    st.markdown('<div class="sub-header">🤖 AGENT_MATRIX // GAME_THEORY</div>', 
+                               unsafe_allow_html=True)
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        agent_chart = create_agent_decision_chart(agent_decisions)
+                        st.plotly_chart(agent_chart, use_container_width=True)
+                        
+                        # Detailed agent decisions
+                        st.markdown("**>> AGENT_ANALYSIS:**")
+                        for decision in agent_decisions:
+                            action_color = "bullish" if decision.action == "BUY" else "bearish" if decision.action == "SELL" else "neutral"
+                            st.markdown(f"""
+                            <div class="agent-card">
+                                <strong style="color: #00d4ff;">{decision.agent_id}</strong> <span style="color: #888;">// {decision.strategy.value.upper()}</span><br>
+                                <span style="color: #888;">ACTION:</span> <span class="{action_color}">{decision.action}</span><br>
+                                <span style="color: #888;">CONF:</span> <span style="color: #00d4ff;">{decision.confidence*100:.1f}%</span><br>
+                                <span style="color: #888;">ALLOC:</span> <span style="color: #ffb000;">{decision.allocation:.1f}%</span>
+                            </div>
+                            """, unsafe_allow_html=True)
+                    
+                    with col2:
+                        nash_chart = create_nash_equilibrium_viz(nash_equilibrium)
+                        st.plotly_chart(nash_chart, use_container_width=True)
+                        
+                        # Nash equilibrium metrics
+                        st.markdown("**>> NASH_METRICS:**")
+                        st.metric("STABILITY", f"{nash_equilibrium['stability_score']*100:.1f}%")
+                        
+                        equilibrium_status = "✅ EQUILIBRIUM_REACHED" if nash_equilibrium['is_equilibrium'] else "⚠️ EQUILIBRIUM_PENDING"
+                        st.markdown(f"""
+                        <div class="terminal-box">
+                            <span style="color: {'#00ff41' if nash_equilibrium['is_equilibrium'] else '#ffb000'};">{equilibrium_status}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        st.markdown("**>> ACTION_DIST:**")
+                        st.markdown(f"""
+                        <div class="terminal-box">
+                            <span style="color: #00ff41;">├─ BUY:</span> {nash_equilibrium['buy_ratio']*100:.1f}%<br>
+                            <span style="color: #ff3e3e;">├─ SELL:</span> {nash_equilibrium['sell_ratio']*100:.1f}%<br>
+                            <span style="color: #ffb000;">└─ HOLD:</span> {nash_equilibrium['hold_ratio']*100:.1f}%
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    # Investment recommendation
+                    st.markdown('<div class="sub-header">💰 INVESTMENT_RECOMMENDATION</div>', 
+                               unsafe_allow_html=True)
+                    
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        action_color = "bullish" if allocation['action'] == "BUY" else "bearish" if allocation['action'] == "SELL" else "neutral"
+                        st.markdown(f"**>> RECOMMENDED_ACTION:** <span class='{action_color}'>{allocation['action']}</span>", 
+                                   unsafe_allow_html=True)
+                        st.metric("ALLOCATION_AMT", f"${allocation['amount']:.2f}")
+                    
+                    with col2:
+                        st.metric("CONFIDENCE", f"{allocation['confidence']*100:.1f}%")
+                        next_investment_days = st.session_state.investment_strategy.days_until_next_investment()
+                        st.metric("NEXT_INVEST", f"{next_investment_days} days")
+                    
+                    with col3:
+                        st.markdown("**>> AGENT_VOTES:**")
+                        st.markdown(f"""
+                        <div class="terminal-box">
+                            <span class="bullish">├─ BUY:</span> {allocation['agent_consensus']['buy']}<br>
+                            <span class="bearish">├─ SELL:</span> {allocation['agent_consensus']['sell']}<br>
+                            <span class="neutral">└─ HOLD:</span> {allocation['agent_consensus']['hold']}
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    # News & insights
+                    st.markdown('<div class="sub-header">📰 NEWS_FEED</div>', 
+                               unsafe_allow_html=True)
+                    
+                    st.markdown("""
+                    <div class="terminal-box">
+                        <span class="sys-msg">SIMULATED_DATA: Headlines from demo engine</span>
                     </div>
                     """, unsafe_allow_html=True)
-            
-            with col2:
-                nash_chart = create_nash_equilibrium_viz(nash_equilibrium)
-                st.plotly_chart(nash_chart, use_container_width=True)
-                
-                # Nash equilibrium metrics
-                st.markdown("**>> NASH_METRICS:**")
-                st.metric("STABILITY", f"{nash_equilibrium['stability_score']*100:.1f}%")
-                
-                equilibrium_status = "✅ EQUILIBRIUM_REACHED" if nash_equilibrium['is_equilibrium'] else "⚠️ EQUILIBRIUM_PENDING"
-                st.markdown(f"""
-                <div class="terminal-box">
-                    <span style="color: {'#00ff41' if nash_equilibrium['is_equilibrium'] else '#ffb000'};">{equilibrium_status}</span>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                st.markdown("**>> ACTION_DIST:**")
-                st.markdown(f"""
-                <div class="terminal-box">
-                    <span style="color: #00ff41;">├─ BUY:</span> {nash_equilibrium['buy_ratio']*100:.1f}%<br>
-                    <span style="color: #ff3e3e;">├─ SELL:</span> {nash_equilibrium['sell_ratio']*100:.1f}%<br>
-                    <span style="color: #ffb000;">└─ HOLD:</span> {nash_equilibrium['hold_ratio']*100:.1f}%
-                </div>
-                """, unsafe_allow_html=True)
-            
-            # Investment recommendation
-            st.markdown('<div class="sub-header">💰 INVESTMENT_RECOMMENDATION</div>', 
-                       unsafe_allow_html=True)
-            
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                action_color = "bullish" if allocation['action'] == "BUY" else "bearish" if allocation['action'] == "SELL" else "neutral"
-                st.markdown(f"**>> RECOMMENDED_ACTION:** <span class='{action_color}'>{allocation['action']}</span>", 
-                           unsafe_allow_html=True)
-                st.metric("ALLOCATION_AMT", f"${allocation['amount']:.2f}")
-            
-            with col2:
-                st.metric("CONFIDENCE", f"{allocation['confidence']*100:.1f}%")
-                next_investment_days = st.session_state.investment_strategy.days_until_next_investment()
-                st.metric("NEXT_INVEST", f"{next_investment_days} days")
-            
-            with col3:
-                st.markdown("**>> AGENT_VOTES:**")
-                st.markdown(f"""
-                <div class="terminal-box">
-                    <span class="bullish">├─ BUY:</span> {allocation['agent_consensus']['buy']}<br>
-                    <span class="bearish">├─ SELL:</span> {allocation['agent_consensus']['sell']}<br>
-                    <span class="neutral">└─ HOLD:</span> {allocation['agent_consensus']['hold']}
-                </div>
-                """, unsafe_allow_html=True)
-            
-            # News & insights
-            st.markdown('<div class="sub-header">📰 NEWS_FEED</div>', 
-                       unsafe_allow_html=True)
-            
-            st.markdown("""
-            <div class="terminal-box">
-                <span class="sys-msg">SIMULATED_DATA: Headlines from demo engine</span>
-            </div>
-            """, unsafe_allow_html=True)
-            for i, news in enumerate(news_texts, 1):
-                sentiment_score = st.session_state.sentiment_analyzer.analyze_text(news)
-                sentiment_color = "#00ff41" if sentiment_score > 0.6 else "#ff3e3e" if sentiment_score < 0.4 else "#ffb000"
-                st.markdown(f"""
-                <div style="padding: 0.5rem 0; border-bottom: 1px solid rgba(0, 212, 255, 0.2);">
-                    <span style="color: {sentiment_color};">▸</span> <span style="color: #c0c0c0;">{news}</span>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            # Technical indicators
-            with st.expander("📊 TECHNICAL_INDICATORS"):
-                tech_df = pd.DataFrame([technical_indicators]).T
-                tech_df.columns = ['Value']
-                st.dataframe(tech_df, use_container_width=True)
-            
-            # Game theory insights
-            with st.expander("🎮 GAME_THEORY_INSIGHTS"):
-                st.markdown("""
-                **>> APPLIED_PRINCIPLES:**
-                
-                1. **NASH_EQUILIBRIUM**: The system iterates agent decisions to find a stable state where no agent 
-                   can improve their payoff by unilaterally changing their strategy.
-                
-                2. **MULTI_AGENT_COORD**: Agents observe each other's actions and adjust their strategies,
-                   similar to coordination games where collective action yields better outcomes.
-                
-                3. **PRISONERS_DILEMMA**: Contrarian agents can benefit from going against the consensus,
-                   representing the tension between individual and collective rationality.
-                
-                4. **BEST_RESPONSE_DYNAMICS**: Each agent calculates their best response given other agents' actions,
-                   converging toward equilibrium through iterative refinement.
-                """)
-                
-                st.markdown(f"""
-                **>> CURRENT_ANALYSIS:**
-                ```
-                STABILITY_SCORE: {nash_equilibrium['stability_score']*100:.1f}% (>70% = EQUILIBRIUM)
-                AGENT_CONSENSUS: {consensus} [{len([d for d in agent_decisions if d.action == consensus])}/{len(agent_decisions)} agents]
-                MARKET_SENTIMENT: {sentiment_signal} ({composite_sentiment*100:.1f}%)
-                ```
-                """)
+                    for i, news in enumerate(news_texts, 1):
+                        sentiment_score = st.session_state.sentiment_analyzer.analyze_text(news)
+                        sentiment_color = "#00ff41" if sentiment_score > 0.6 else "#ff3e3e" if sentiment_score < 0.4 else "#ffb000"
+                        st.markdown(f"""
+                        <div style="padding: 0.5rem 0; border-bottom: 1px solid rgba(0, 212, 255, 0.2);">
+                            <span style="color: {sentiment_color};">▸</span> <span style="color: #c0c0c0;">{news}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    # Technical indicators
+                    with st.expander("📊 TECHNICAL_INDICATORS"):
+                        tech_df = pd.DataFrame([technical_indicators]).T
+                        tech_df.columns = ['Value']
+                        st.dataframe(tech_df, use_container_width=True)
+                    
+                    # Game theory insights
+                    with st.expander("🎮 GAME_THEORY_INSIGHTS"):
+                        st.markdown("""
+                        **>> APPLIED_PRINCIPLES:**
+                        
+                        1. **NASH_EQUILIBRIUM**: The system iterates agent decisions to find a stable state where no agent 
+                           can improve their payoff by unilaterally changing their strategy.
+                        
+                        2. **MULTI_AGENT_COORD**: Agents observe each other's actions and adjust their strategies,
+                           similar to coordination games where collective action yields better outcomes.
+                        
+                        3. **PRISONERS_DILEMMA**: Contrarian agents can benefit from going against the consensus,
+                           representing the tension between individual and collective rationality.
+                        
+                        4. **BEST_RESPONSE_DYNAMICS**: Each agent calculates their best response given other agents' actions,
+                           converging toward equilibrium through iterative refinement.
+                        """)
+                        
+                        st.markdown(f"""
+                        **>> CURRENT_ANALYSIS:**
+                        ```
+                        STABILITY_SCORE: {nash_equilibrium['stability_score']*100:.1f}% (>70% = EQUILIBRIUM)
+                        AGENT_CONSENSUS: {consensus} [{len([d for d in agent_decisions if d.action == consensus])}/{len(agent_decisions)} agents]
+                        MARKET_SENTIMENT: {sentiment_signal} ({composite_sentiment*100:.1f}%)
+                        ```
+                        """)
     
     else:
         # Welcome screen - Terminal Style
