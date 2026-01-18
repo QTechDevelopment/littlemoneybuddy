@@ -18,10 +18,10 @@ class SentimentAnalyzer:
     def analyze_text(self, text: str) -> float:
         """
         Analyze sentiment from text (news, social media)
-        Returns sentiment score [-1, 1]
+        Returns sentiment score [0, 1] where 0=negative, 0.5=neutral, 1=positive
         """
         if not text:
-            return 0.0
+            return 0.5
             
         blob = TextBlob(text)
         # Normalize polarity from [-1, 1] to [0, 1]

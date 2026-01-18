@@ -166,25 +166,10 @@ class BiweeklyInvestmentStrategy:
         return allocation
         
     def get_next_investment_date(self) -> datetime:
-        """Calculate next biweekly investment date"""
+        """Calculate next biweekly investment date (every 14 days from today)"""
         today = datetime.now()
-        
-        # Biweekly = every 14 days
-        # Find next occurrence
-        days_since_start_of_month = today.day
-        
-        if days_since_start_of_month <= 14:
-            next_date = today.replace(day=14)
-        else:
-            # Next month, 1st or 14th
-            if today.month == 12:
-                next_date = today.replace(year=today.year + 1, month=1, day=1)
-            else:
-                try:
-                    next_date = today.replace(month=today.month + 1, day=1)
-                except ValueError:
-                    next_date = today.replace(month=today.month + 1, day=1)
-                    
+        # Simply add 14 days for true biweekly schedule
+        next_date = today + timedelta(days=14)
         return next_date
         
     def days_until_next_investment(self) -> int:
