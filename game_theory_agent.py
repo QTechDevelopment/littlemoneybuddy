@@ -1,6 +1,7 @@
 """
 Game Theory Stock Agent
 Multi-agent system for stock market analysis using game-theoretic principles
+Enhanced with Bull, Bear, Technical, Sentiment, and Fundamental agents
 """
 
 import numpy as np
@@ -17,6 +18,16 @@ class AgentStrategy(Enum):
     CONTRARIAN = "contrarian"
 
 
+class AgentType(Enum):
+    """Agent specialized types"""
+    BULL = "Bull"
+    BEAR = "Bear"
+    TECHNICAL = "Technical"
+    SENTIMENT = "Sentiment"
+    FUNDAMENTAL = "Fundamental"
+    CONTRARIAN = "Contrarian"
+
+
 @dataclass
 class AgentDecision:
     """Represents an agent's investment decision"""
@@ -25,15 +36,17 @@ class AgentDecision:
     action: str  # "BUY", "SELL", "HOLD"
     confidence: float
     allocation: float  # percentage
+    agent_type: str = "Balanced"  # Agent type for consensus analysis
 
 
 class GameTheoryAgent:
     """Individual AI agent with game-theoretic decision making"""
     
-    def __init__(self, agent_id: str, strategy: AgentStrategy, risk_tolerance: float = 0.5):
+    def __init__(self, agent_id: str, strategy: AgentStrategy, risk_tolerance: float = 0.5, agent_type: str = "Balanced"):
         self.agent_id = agent_id
         self.strategy = strategy
         self.risk_tolerance = risk_tolerance
+        self.agent_type = agent_type
         self.payoff_history = []
         
     def calculate_payoff(self, action: str, market_sentiment: float, 
@@ -100,7 +113,8 @@ class GameTheoryAgent:
             strategy=self.strategy,
             action=best_action,
             confidence=confidence,
-            allocation=min(allocation, 100.0)
+            allocation=min(allocation, 100.0),
+            agent_type=self.agent_type
         )
 
 
@@ -114,15 +128,16 @@ class MultiAgentSystem:
     def _initialize_agents(self):
         """Initialize diverse set of agents with different strategies"""
         strategies_config = [
-            ("Agent_Alpha", AgentStrategy.AGGRESSIVE, 0.8),
-            ("Agent_Beta", AgentStrategy.CONSERVATIVE, 0.3),
-            ("Agent_Gamma", AgentStrategy.BALANCED, 0.5),
-            ("Agent_Delta", AgentStrategy.CONTRARIAN, 0.6),
-            ("Agent_Epsilon", AgentStrategy.BALANCED, 0.5),
+            ("Agent_Alpha_Bull", AgentStrategy.AGGRESSIVE, 0.8, "Bull"),
+            ("Agent_Beta_Bear", AgentStrategy.CONSERVATIVE, 0.3, "Bear"),
+            ("Agent_Gamma_Technical", AgentStrategy.BALANCED, 0.5, "Technical"),
+            ("Agent_Delta_Contrarian", AgentStrategy.CONTRARIAN, 0.6, "Contrarian"),
+            ("Agent_Epsilon_Sentiment", AgentStrategy.BALANCED, 0.5, "Sentiment"),
+            ("Agent_Zeta_Fundamental", AgentStrategy.BALANCED, 0.6, "Fundamental"),
         ]
         
-        for agent_id, strategy, risk in strategies_config:
-            self.agents.append(GameTheoryAgent(agent_id, strategy, risk))
+        for agent_id, strategy, risk, agent_type in strategies_config:
+            self.agents.append(GameTheoryAgent(agent_id, strategy, risk, agent_type))
             
     def run_simulation(self, market_data: Dict, sentiment: float) -> List[AgentDecision]:
         """
