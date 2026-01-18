@@ -234,6 +234,9 @@ def main():
     with st.sidebar:
         st.header("⚙️ Configuration")
         
+        # Demo mode notice
+        st.info("🎯 **Demo Mode**: Using simulated stock data for demonstration purposes")
+        
         # Stock selection
         ticker = st.text_input(
             "Stock Ticker",
