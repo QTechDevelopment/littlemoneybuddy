@@ -211,7 +211,7 @@ def create_price_chart(df, ticker):
         fig.add_trace(go.Scatter(
             x=df.index, y=ma20,
             name='MA20',
-            line=dict(color='#aaaaaa', width=1, dash='dot')
+            line=dict(color='#888888', width=1, dash='dot')
         ))
     
     if len(df) >= 50:
