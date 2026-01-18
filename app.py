@@ -242,8 +242,8 @@ def create_agent_decision_chart(decisions):
         'HOLD': actions.count('HOLD')
     }
     
-    # Terminal-style colors
-    colors = {'BUY': '#00ff41', 'SELL': '#ff3e3e', 'HOLD': '#ffb000'}
+    # Monochrome colors - all white/gray
+    colors = {'BUY': '#ffffff', 'SELL': '#aaaaaa', 'HOLD': '#777777'}
     
     fig = go.Figure(data=[
         go.Bar(
@@ -252,21 +252,17 @@ def create_agent_decision_chart(decisions):
             marker_color=[colors[k] for k in action_counts.keys()],
             text=list(action_counts.values()),
             textposition='auto',
-            textfont=dict(color='#0a0e14', family='JetBrains Mono, monospace', size=16)
+            textfont=dict(color='black', family='JetBrains Mono, monospace', size=16)
         )
     ])
     
     fig.update_layout(
-        title=dict(text=">> AGENT_DECISION_MATRIX", font=dict(color='#00ff41', family='JetBrains Mono, monospace')),
-        yaxis_title="AGENT_COUNT",
-        xaxis_title="ACTION",
-        template="plotly_dark",
-        height=300,
-        paper_bgcolor='rgba(10, 14, 20, 0.9)',
-        plot_bgcolor='rgba(10, 14, 20, 0.9)',
-        font=dict(family='JetBrains Mono, monospace', color='#00d4ff'),
-        xaxis=dict(gridcolor='rgba(0, 255, 65, 0.1)'),
-        yaxis=dict(gridcolor='rgba(0, 255, 65, 0.1)')
+        plot_bgcolor='black',
+        paper_bgcolor='black',
+        font=dict(family='JetBrains Mono, monospace', color='white'),
+        xaxis=dict(showgrid=False, color='white'),
+        yaxis=dict(showgrid=True, gridcolor='#333333', color='white'),
+        margin=dict(l=10, r=10, t=10, b=10)
     )
     
     return fig
@@ -278,22 +274,22 @@ def create_sentiment_gauge(sentiment_score):
         mode="gauge+number+delta",
         value=sentiment_score * 100,
         domain={'x': [0, 1], 'y': [0, 1]},
-        title={'text': "MARKET_SENTIMENT", 'font': {'size': 16, 'color': '#00ff41', 'family': 'JetBrains Mono, monospace'}},
-        delta={'reference': 50, 'increasing': {'color': "#00ff41"}, 'decreasing': {'color': "#ff3e3e"}},
-        number={'font': {'color': '#00ff41', 'family': 'JetBrains Mono, monospace'}},
+        title={'text': "MARKET_SENTIMENT", 'font': {'size': 16, 'color': 'white', 'family': 'JetBrains Mono, monospace'}},
+        delta={'reference': 50, 'increasing': {'color': "white"}, 'decreasing': {'color': "#555555"}},
+        number={'font': {'color': 'white', 'family': 'JetBrains Mono, monospace'}},
         gauge={
-            'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#00d4ff", 'tickfont': {'color': '#00d4ff'}},
-            'bar': {'color': "#00ff41"},
-            'bgcolor': "#0a0e14",
+            'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "white", 'tickfont': {'color': 'white'}},
+            'bar': {'color': "white"},
+            'bgcolor': "black",
             'borderwidth': 2,
-            'bordercolor': "#00d4ff",
+            'bordercolor': "white",
             'steps': [
-                {'range': [0, 30], 'color': 'rgba(255, 62, 62, 0.3)'},
-                {'range': [30, 70], 'color': 'rgba(255, 176, 0, 0.3)'},
-                {'range': [70, 100], 'color': 'rgba(0, 255, 65, 0.3)'}
+                {'range': [0, 30], 'color': '#222222'},
+                {'range': [30, 70], 'color': '#333333'},
+                {'range': [70, 100], 'color': '#444444'}
             ],
             'threshold': {
-                'line': {'color': "#00d4ff", 'width': 4},
+                'line': {'color': "white", 'width': 4},
                 'thickness': 0.75,
                 'value': 50
             }
@@ -302,8 +298,8 @@ def create_sentiment_gauge(sentiment_score):
     
     fig.update_layout(
         height=250,
-        paper_bgcolor='rgba(10, 14, 20, 0.9)',
-        font=dict(family='JetBrains Mono, monospace', color='#00d4ff')
+        paper_bgcolor='black',
+        font=dict(family='JetBrains Mono, monospace', color='white')
     )
     return fig
 
@@ -323,8 +319,8 @@ def create_nash_equilibrium_viz(equilibrium_data):
             theta=categories,
             fill='toself',
             name='Current State',
-            line=dict(color='#00ff41'),
-            fillcolor='rgba(0, 255, 65, 0.2)'
+            line=dict(color='white'),
+            fillcolor='rgba(255, 255, 255, 0.2)'
         )
     ])
     
@@ -333,20 +329,20 @@ def create_nash_equilibrium_viz(equilibrium_data):
             radialaxis=dict(
                 visible=True,
                 range=[0, 100],
-                tickfont=dict(color='#00d4ff', family='JetBrains Mono, monospace'),
-                gridcolor='rgba(0, 212, 255, 0.2)'
+                tickfont=dict(color='white', family='JetBrains Mono, monospace'),
+                gridcolor='#333333'
             ),
             angularaxis=dict(
-                tickfont=dict(color='#00ff41', family='JetBrains Mono, monospace'),
-                gridcolor='rgba(0, 212, 255, 0.2)'
+                tickfont=dict(color='white', family='JetBrains Mono, monospace'),
+                gridcolor='#333333'
             ),
-            bgcolor='rgba(10, 14, 20, 0.9)'
+            bgcolor='black'
         ),
         showlegend=False,
-        title=dict(text=">> NASH_EQUILIBRIUM", font=dict(color='#00ff41', family='JetBrains Mono, monospace')),
-        height=300,
-        paper_bgcolor='rgba(10, 14, 20, 0.9)',
-        font=dict(family='JetBrains Mono, monospace', color='#00d4ff')
+        plot_bgcolor='black',
+        paper_bgcolor='black',
+        font=dict(family='JetBrains Mono, monospace', color='white'),
+        margin=dict(l=10, r=10, t=10, b=10)
     )
     
     return fig
