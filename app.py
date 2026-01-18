@@ -10,6 +10,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime, timedelta
 from io import BytesIO
+from collections import Counter
 
 from game_theory_agent import (
     MultiAgentSystem, AgentStrategy, GameTheoryAgent
@@ -52,8 +53,8 @@ def parse_excel_tickers(uploaded_file) -> list:
         # Extract tickers, clean and deduplicate
         tickers = df[ticker_col].dropna().astype(str).str.upper().str.strip().unique().tolist()
         
-        # Filter out empty strings and common non-ticker values
-        tickers = [t for t in tickers if t and len(t) <= 10 and t.isalpha()]
+        # Filter out empty strings - allow alphanumeric tickers and common formats like BRK.B
+        tickers = [t for t in tickers if t and len(t) <= 10 and t.replace('.', '').replace('-', '').isalnum()]
         
         return tickers[:50]  # Limit to 50 tickers for performance
     except Exception as e:
@@ -79,8 +80,11 @@ def analyze_portfolio(tickers: list, period: str, investment_amount: float,
     Returns:
         List of analysis results for each stock
     """
+    if not tickers:
+        return []
+    
     results = []
-    per_stock_amount = investment_amount / len(tickers) if tickers else 0
+    per_stock_amount = investment_amount / len(tickers)
     
     for ticker in tickers:
         try:
@@ -121,9 +125,9 @@ def analyze_portfolio(tickers: list, period: str, investment_amount: float,
             agent_decisions = agent_system.run_simulation(market_data, composite_sentiment)
             consensus = agent_system.get_consensus_decision(agent_decisions)
             
-            # Calculate allocation
-            investment_strategy.investment_amount = per_stock_amount
-            allocation = investment_strategy.calculate_biweekly_allocation(
+            # Calculate allocation using a temporary strategy to avoid side effects
+            temp_strategy = BiweeklyInvestmentStrategy(investment_amount=per_stock_amount)
+            allocation = temp_strategy.calculate_biweekly_allocation(
                 agent_decisions, composite_sentiment
             )
             
@@ -162,9 +166,11 @@ def create_portfolio_breakdown_chart(results: list):
     if not valid_results:
         return None
     
-    # Action distribution
-    actions = [r['action'] for r in valid_results]
-    action_counts = {'BUY': actions.count('BUY'), 'SELL': actions.count('SELL'), 'HOLD': actions.count('HOLD')}
+    # Action distribution using Counter for efficiency
+    action_counter = Counter(r['action'] for r in valid_results)
+    action_counts = {'BUY': action_counter.get('BUY', 0), 
+                     'SELL': action_counter.get('SELL', 0), 
+                     'HOLD': action_counter.get('HOLD', 0)}
     
     fig = go.Figure(data=[
         go.Pie(
@@ -197,10 +203,8 @@ def create_sector_breakdown_chart(results: list):
     if not valid_results:
         return None
     
-    sectors = {}
-    for r in valid_results:
-        sector = r.get('sector', 'Unknown')
-        sectors[sector] = sectors.get(sector, 0) + 1
+    # Use Counter for efficient sector counting
+    sectors = Counter(r.get('sector', 'Unknown') for r in valid_results)
     
     fig = go.Figure(data=[
         go.Bar(
