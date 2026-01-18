@@ -294,6 +294,18 @@ st.markdown("""
     .glitch-text {
         animation: glitch 3s infinite;
     }
+    
+    /* Accessibility: Respect user's motion preferences */
+    @media (prefers-reduced-motion: reduce) {
+        .glitch-text {
+            animation: none;
+            text-shadow: 0 0 10px rgba(0, 255, 65, 0.7), 0 0 20px rgba(0, 255, 65, 0.5);
+        }
+        .cursor {
+            animation: none;
+            opacity: 1;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -460,7 +472,7 @@ def create_nash_equilibrium_viz(equilibrium_data):
             radialaxis=dict(
                 visible=True,
                 range=[0, 100],
-                tickfont=dict(color='#00d4ff'),
+                tickfont=dict(color='#00d4ff', family='JetBrains Mono, monospace'),
                 gridcolor='rgba(0, 212, 255, 0.2)'
             ),
             angularaxis=dict(
