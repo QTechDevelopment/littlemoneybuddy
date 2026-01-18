@@ -331,8 +331,15 @@ def main():
             volumes = stock_data['Volume'].tolist()
             
             # News sentiment from articles
-            news_texts = [article.get('title', '') + ' ' + article.get('description', '') 
-                         for article in news_articles[:5]]
+            news_texts = []
+            for article in news_articles[:5]:
+                title = article.get('title', '').strip()
+                desc = article.get('description', '').strip()
+                # Combine title and description, avoiding double spaces
+                combined = ' '.join(filter(None, [title, desc]))
+                if combined:
+                    news_texts.append(combined)
+            
             if not news_texts:
                 news_texts = generate_mock_news(ticker, np.random.random())
             

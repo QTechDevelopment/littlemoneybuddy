@@ -9,6 +9,12 @@ from dataclasses import dataclass
 from enum import Enum
 
 
+# Agent type constants for consistency
+AGENT_TYPE_BULL = "Bull"
+AGENT_TYPE_BEAR = "Bear"
+AGENT_TYPE_TECHNICAL = "Technical"
+
+
 class SignalReliability(Enum):
     """Signal reliability levels"""
     VERY_HIGH = "very_high"  # ~85%+ reliability
@@ -165,7 +171,7 @@ class MultiAgentConsensus:
         # Check for Bull + Bear + Technical consensus (optimal)
         has_bull_bear_tech = all(
             t in consensus_agent_types 
-            for t in ['Bull', 'Bear', 'Technical']
+            for t in [AGENT_TYPE_BULL, AGENT_TYPE_BEAR, AGENT_TYPE_TECHNICAL]
         )
         
         if has_bull_bear_tech:

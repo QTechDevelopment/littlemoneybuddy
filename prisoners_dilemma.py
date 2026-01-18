@@ -9,6 +9,21 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 
 
+def safe_divide(numerator: float, denominator: float, default: float = 0.0) -> float:
+    """
+    Safely divide two numbers, returning default if denominator is zero
+    
+    Args:
+        numerator: The numerator
+        denominator: The denominator
+        default: Value to return if denominator is zero
+        
+    Returns:
+        Result of division or default value
+    """
+    return numerator / denominator if denominator != 0 else default
+
+
 @dataclass
 class CompanyCapex:
     """Represents a company's capex data"""
@@ -75,7 +90,7 @@ class PrisonersDilemmaCapexAnalyzer:
                 capex = 0
             
             # Calculate capex/revenue ratio
-            capex_ratio = capex / revenue if revenue > 0 else 0
+            capex_ratio = safe_divide(capex, revenue)
             
             # Determine if AI-heavy
             sector = info.get('sector', '')

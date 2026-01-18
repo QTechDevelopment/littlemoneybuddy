@@ -184,14 +184,19 @@ class BiweeklySignalGenerator:
             base_size = 0.0
             action_text = "Maintain current position"
         
+        # Conviction levels as constants
+        VERY_HIGH_THRESHOLD = 0.80
+        HIGH_THRESHOLD = 0.65
+        MODERATE_THRESHOLD = 0.50
+        
         # Adjust by confidence
-        if confidence >= 0.80:
+        if confidence >= VERY_HIGH_THRESHOLD:
             size_mult = 1.0
             conviction = "VERY HIGH"
-        elif confidence >= 0.65:
+        elif confidence >= HIGH_THRESHOLD:
             size_mult = 0.85
             conviction = "HIGH"
-        elif confidence >= 0.50:
+        elif confidence >= MODERATE_THRESHOLD:
             size_mult = 0.60
             conviction = "MODERATE"
         else:
@@ -294,17 +299,21 @@ class BiweeklySignalGenerator:
         sell_count = sum(1 for s in self.signal_history if s['signal'] == 'SELL')
         hold_count = sum(1 for s in self.signal_history if s['signal'] == 'HOLD')
         
-        avg_confidence = np.mean([s['confidence'] for s in self.signal_history])
+        # Safe calculation of average confidence
+        confidences = [s.get('confidence', 0) for s in self.signal_history]
+        avg_confidence = np.mean(confidences) if confidences else 0.0
+        
+        total = len(self.signal_history)
         
         return {
-            'total_signals': len(self.signal_history),
+            'total_signals': total,
             'buy_signals': buy_count,
             'sell_signals': sell_count,
             'hold_signals': hold_count,
             'avg_confidence': avg_confidence,
-            'buy_ratio': buy_count / len(self.signal_history),
-            'sell_ratio': sell_count / len(self.signal_history),
-            'hold_ratio': hold_count / len(self.signal_history)
+            'buy_ratio': buy_count / total if total > 0 else 0,
+            'sell_ratio': sell_count / total if total > 0 else 0,
+            'hold_ratio': hold_count / total if total > 0 else 0
         }
 
 

@@ -59,9 +59,10 @@ class FinancialDataSource:
             # Parse recent recommendations if available
             if recommendations is not None and not recommendations.empty:
                 recent = recommendations.tail(10)
-                for _, rec in recent.iterrows():
+                for idx in recent.index:
+                    rec = recent.loc[idx]
                     result['recent_recommendations'].append({
-                        'date': rec.name.strftime('%Y-%m-%d') if hasattr(rec.name, 'strftime') else str(rec.name),
+                        'date': idx.strftime('%Y-%m-%d') if hasattr(idx, 'strftime') else str(idx),
                         'firm': rec.get('Firm', 'Unknown'),
                         'action': rec.get('To Grade', 'Unknown'),
                         'from_grade': rec.get('From Grade', 'N/A')

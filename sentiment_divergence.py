@@ -195,10 +195,14 @@ class SentimentDivergenceAnalyzer:
         
         # Calculate trend
         if len(divergences) >= 3:
-            # Linear regression slope
-            x = np.arange(len(divergences))
-            y = np.array(divergences)
-            slope = np.polyfit(x, y, 1)[0]
+            # Linear regression slope with error handling
+            try:
+                x = np.arange(len(divergences))
+                y = np.array(divergences)
+                slope = np.polyfit(x, y, 1)[0]
+            except (np.linalg.LinAlgError, ValueError) as e:
+                # Fallback to simple comparison if polyfit fails
+                slope = (divergences[-1] - divergences[0]) / len(divergences)
             
             if slope > 0.05:
                 trend = "INCREASING_DIVERGENCE"
