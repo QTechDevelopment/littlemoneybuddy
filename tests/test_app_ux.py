@@ -53,5 +53,24 @@ class TestUXChanges(unittest.TestCase):
             # Verify warning was NOT called
             app.st.warning.assert_not_called()
 
+    def test_parse_excel_tickers_exact_limit(self):
+        # Create a mock dataframe with exactly 50 tickers (boundary condition)
+        tickers = [f"TICK{i}" for i in range(50)]
+        df = pd.DataFrame({'ticker': tickers})
+
+        # Mock uploaded file
+        mock_file = MagicMock()
+
+        # Patch pandas read_excel to return our dataframe
+        with patch('pandas.read_excel', return_value=df):
+            app.st.warning.reset_mock()
+            result = app.parse_excel_tickers(mock_file)
+
+            # Verify result length
+            self.assertEqual(len(result), 50)
+
+            # Verify warning was NOT called
+            app.st.warning.assert_not_called()
+
 if __name__ == '__main__':
     unittest.main()
