@@ -33,20 +33,20 @@ st.markdown("""
     
     /* Global monochrome styling */
     .stApp {
-        background-color: black !important;
+        background-color: #000000 !important;
         font-family: 'JetBrains Mono', monospace !important;
     }
     
     /* Override text colors to white */
     .stApp, .stApp p, .stApp span, .stApp label, .stApp div {
         font-family: 'JetBrains Mono', monospace !important;
-        color: white !important;
+        color: #ffffff !important;
     }
     
     /* Headers */
     .main-header {
         font-size: 2rem;
-        color: white;
+        color: #ffffff;
         font-weight: 700;
         margin-bottom: 1rem;
         font-family: 'JetBrains Mono', monospace !important;
@@ -59,11 +59,11 @@ st.markdown("""
     
     .sub-header {
         font-size: 1.2rem;
-        color: white;
+        color: #ffffff;
         margin-top: 1.5rem;
         margin-bottom: 0.5rem;
         font-family: 'JetBrains Mono', monospace !important;
-        border-bottom: 1px dashed white;
+        border-bottom: 1px dashed #ffffff;
         padding-bottom: 0.5rem;
     }
     
@@ -73,10 +73,14 @@ st.markdown("""
     
     /* Cards */
     .metric-card, .agent-card, .terminal-box {
-        background-color: black;
+        background-color: #000000;
         padding: 1rem;
-        border: 1px solid white;
+        border: 1px solid #ffffff;
         margin: 0.5rem 0;
+    }
+    
+    .agent-card {
+        position: relative;
     }
     
     .agent-card::before {
@@ -84,41 +88,49 @@ st.markdown("""
         position: absolute;
         top: -10px;
         left: 10px;
-        background: black;
+        background: #000000;
         padding: 0 5px;
-        color: white;
+        color: #ffffff;
         font-size: 0.7rem;
     }
     
-    /* Status colors - all white for monochrome */
-    .bullish, .bearish, .neutral {
-        color: white !important;
+    /* Status colors - different shades for distinction */
+    .bullish {
+        color: #ffffff !important;
+        font-weight: bold;
+    }
+    .bearish {
+        color: #888888 !important;
+        font-weight: bold;
+    }
+    .neutral {
+        color: #bbbbbb !important;
         font-weight: bold;
     }
     
     /* Sidebar */
     section[data-testid="stSidebar"] {
-        background-color: black !important;
-        border-right: 1px solid white !important;
+        background-color: #000000 !important;
+        border-right: 1px solid #ffffff !important;
     }
     
     section[data-testid="stSidebar"] .stMarkdown {
-        color: white !important;
+        color: #ffffff !important;
     }
     
     /* Input fields */
     .stTextInput input, .stNumberInput input, .stSelectbox select {
-        background-color: black !important;
-        color: white !important;
-        border: 1px solid white !important;
+        background-color: #000000 !important;
+        color: #ffffff !important;
+        border: 1px solid #ffffff !important;
         font-family: 'JetBrains Mono', monospace !important;
     }
     
     /* Buttons */
     .stButton > button {
-        background-color: black !important;
-        color: white !important;
-        border: 1px solid white !important;
+        background-color: #000000 !important;
+        color: #ffffff !important;
+        border: 1px solid #ffffff !important;
         font-family: 'JetBrains Mono', monospace !important;
         text-transform: uppercase;
         letter-spacing: 1px;
@@ -130,13 +142,13 @@ st.markdown("""
     
     /* Metrics */
     [data-testid="stMetricValue"], [data-testid="stMetricLabel"], [data-testid="stMetricDelta"] {
-        color: white !important;
+        color: #ffffff !important;
         font-family: 'JetBrains Mono', monospace !important;
     }
     
     /* Progress bars */
     .stProgress > div > div {
-        background-color: white !important;
+        background-color: #ffffff !important;
     }
     
     /* Scrollbar */
@@ -146,17 +158,17 @@ st.markdown("""
     }
     
     ::-webkit-scrollbar-track {
-        background: black;
+        background: #000000;
     }
     
     ::-webkit-scrollbar-thumb {
-        background: white;
+        background: #ffffff;
     }
     
     /* ASCII art header */
     .ascii-header {
         font-family: 'JetBrains Mono', monospace !important;
-        color: white;
+        color: #ffffff;
         font-size: 0.6rem;
         line-height: 1.1;
         white-space: pre;
@@ -165,7 +177,7 @@ st.markdown("""
     
     /* System message */
     .sys-msg {
-        color: white;
+        color: #ffffff;
         font-size: 0.9rem;
         font-family: 'JetBrains Mono', monospace !important;
     }
@@ -223,11 +235,11 @@ def create_price_chart(df, ticker):
         ))
     
     fig.update_layout(
-        plot_bgcolor='black',
-        paper_bgcolor='black',
-        font=dict(color='white', family='JetBrains Mono'),
-        xaxis=dict(showgrid=False, color='white'),
-        yaxis=dict(showgrid=True, gridcolor='#333333', color='white'),
+        plot_bgcolor='#000000',
+        paper_bgcolor='#000000',
+        font=dict(color='#ffffff', family='JetBrains Mono'),
+        xaxis=dict(showgrid=False, color='#ffffff'),
+        yaxis=dict(showgrid=True, gridcolor='#333333', color='#ffffff'),
         margin=dict(l=10, r=10, t=10, b=10)
     )
     return fig
@@ -252,16 +264,16 @@ def create_agent_decision_chart(decisions):
             marker_color=[colors[k] for k in action_counts.keys()],
             text=list(action_counts.values()),
             textposition='auto',
-            textfont=dict(color='black', family='JetBrains Mono, monospace', size=16)
+            textfont=dict(color='#000000', family='JetBrains Mono, monospace', size=16)
         )
     ])
     
     fig.update_layout(
-        plot_bgcolor='black',
-        paper_bgcolor='black',
-        font=dict(family='JetBrains Mono, monospace', color='white'),
-        xaxis=dict(showgrid=False, color='white'),
-        yaxis=dict(showgrid=True, gridcolor='#333333', color='white'),
+        plot_bgcolor='#000000',
+        paper_bgcolor='#000000',
+        font=dict(family='JetBrains Mono, monospace', color='#ffffff'),
+        xaxis=dict(showgrid=False, color='#ffffff'),
+        yaxis=dict(showgrid=True, gridcolor='#333333', color='#ffffff'),
         margin=dict(l=10, r=10, t=10, b=10)
     )
     
@@ -274,22 +286,22 @@ def create_sentiment_gauge(sentiment_score):
         mode="gauge+number+delta",
         value=sentiment_score * 100,
         domain={'x': [0, 1], 'y': [0, 1]},
-        title={'text': "MARKET_SENTIMENT", 'font': {'size': 16, 'color': 'white', 'family': 'JetBrains Mono, monospace'}},
-        delta={'reference': 50, 'increasing': {'color': "white"}, 'decreasing': {'color': "#555555"}},
-        number={'font': {'color': 'white', 'family': 'JetBrains Mono, monospace'}},
+        title={'text': "MARKET_SENTIMENT", 'font': {'size': 16, 'color': '#ffffff', 'family': 'JetBrains Mono, monospace'}},
+        delta={'reference': 50, 'increasing': {'color': "#ffffff"}, 'decreasing': {'color': "#555555"}},
+        number={'font': {'color': '#ffffff', 'family': 'JetBrains Mono, monospace'}},
         gauge={
-            'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "white", 'tickfont': {'color': 'white'}},
-            'bar': {'color': "white"},
-            'bgcolor': "black",
+            'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#ffffff", 'tickfont': {'color': '#ffffff'}},
+            'bar': {'color': "#ffffff"},
+            'bgcolor': "#000000",
             'borderwidth': 2,
-            'bordercolor': "white",
+            'bordercolor': "#ffffff",
             'steps': [
-                {'range': [0, 30], 'color': '#222222'},
-                {'range': [30, 70], 'color': '#333333'},
-                {'range': [70, 100], 'color': '#444444'}
+                {'range': [0, 30], 'color': '#1a1a1a'},
+                {'range': [30, 70], 'color': '#404040'},
+                {'range': [70, 100], 'color': '#666666'}
             ],
             'threshold': {
-                'line': {'color': "white", 'width': 4},
+                'line': {'color': "#ffffff", 'width': 4},
                 'thickness': 0.75,
                 'value': 50
             }
@@ -298,8 +310,8 @@ def create_sentiment_gauge(sentiment_score):
     
     fig.update_layout(
         height=250,
-        paper_bgcolor='black',
-        font=dict(family='JetBrains Mono, monospace', color='white')
+        paper_bgcolor='#000000',
+        font=dict(family='JetBrains Mono, monospace', color='#ffffff')
     )
     return fig
 
@@ -319,7 +331,7 @@ def create_nash_equilibrium_viz(equilibrium_data):
             theta=categories,
             fill='toself',
             name='Current State',
-            line=dict(color='white'),
+            line=dict(color='#ffffff'),
             fillcolor='rgba(255, 255, 255, 0.2)'
         )
     ])
@@ -329,19 +341,18 @@ def create_nash_equilibrium_viz(equilibrium_data):
             radialaxis=dict(
                 visible=True,
                 range=[0, 100],
-                tickfont=dict(color='white', family='JetBrains Mono, monospace'),
+                tickfont=dict(color='#ffffff', family='JetBrains Mono, monospace'),
                 gridcolor='#333333'
             ),
             angularaxis=dict(
-                tickfont=dict(color='white', family='JetBrains Mono, monospace'),
+                tickfont=dict(color='#ffffff', family='JetBrains Mono, monospace'),
                 gridcolor='#333333'
             ),
-            bgcolor='black'
+            bgcolor='#000000'
         ),
         showlegend=False,
-        plot_bgcolor='black',
-        paper_bgcolor='black',
-        font=dict(family='JetBrains Mono, monospace', color='white'),
+        paper_bgcolor='#000000',
+        font=dict(family='JetBrains Mono, monospace', color='#ffffff'),
         margin=dict(l=10, r=10, t=10, b=10)
     )
     
@@ -367,7 +378,7 @@ def main():
     """, unsafe_allow_html=True)
     
     # Header with terminal prompt style
-    st.markdown('<div class="main-header glitch-text">GAME_THEORY_STOCK_AGENT<span class="cursor"></span></div>', 
+    st.markdown('<div class="main-header">GAME_THEORY_STOCK_AGENT</div>', 
                 unsafe_allow_html=True)
     st.markdown('<p class="sys-msg">AI-Driven Stock Analysis :: Game-Theoretic Principles :: Multi-Agent System v2.0</p>', 
                 unsafe_allow_html=True)
