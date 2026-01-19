@@ -14,7 +14,12 @@ class StockDataFetcher:
     """Fetches and caches stock market data"""
     
     def __init__(self):
-        self.cache = {}
+        # Cache for stock price data, keyed by (ticker, period)
+        self.data_cache = {}
+        # Cache for stock info, keyed by ticker
+        self.info_cache = {}
+        # Alias for backward compatibility if accessed externally
+        self.cache = self.data_cache
         
     def get_stock_data(self, ticker: str, period: str = "3mo") -> Optional[pd.DataFrame]:
         """
@@ -27,6 +32,11 @@ class StockDataFetcher:
         Returns:
             DataFrame with stock data or None if failed
         """
+        # Check cache first
+        cache_key = (ticker, period)
+        if cache_key in self.data_cache:
+            return self.data_cache[cache_key]
+
         try:
             stock = yf.Ticker(ticker)
             df = stock.history(period=period)
@@ -34,15 +44,19 @@ class StockDataFetcher:
             if df.empty:
                 # Fallback to mock data
                 print(f"Using mock data for {ticker}")
-                return generate_mock_stock_data(ticker, period)
+                mock_data = generate_mock_stock_data(ticker, period)
+                self.data_cache[cache_key] = mock_data
+                return mock_data
                 
-            self.cache[ticker] = df
+            self.data_cache[cache_key] = df
             return df
         except Exception as e:
             print(f"Error fetching data for {ticker}: {e}")
             # Fallback to mock data
             print(f"Using mock data for {ticker}")
-            return generate_mock_stock_data(ticker, period)
+            mock_data = generate_mock_stock_data(ticker, period)
+            self.data_cache[cache_key] = mock_data
+            return mock_data
             
     def get_current_price(self, ticker: str) -> Optional[float]:
         """Get current stock price"""
@@ -58,6 +72,10 @@ class StockDataFetcher:
             
     def get_stock_info(self, ticker: str) -> Dict:
         """Get stock information"""
+        # Check cache first
+        if ticker in self.info_cache:
+            return self.info_cache[ticker]
+
         try:
             stock = yf.Ticker(ticker)
             info = stock.info
@@ -65,9 +83,11 @@ class StockDataFetcher:
             # Check if we got valid data
             if not info or 'symbol' not in info:
                 # Fallback to mock data
-                return get_mock_stock_info(ticker)
+                mock_info = get_mock_stock_info(ticker)
+                self.info_cache[ticker] = mock_info
+                return mock_info
             
-            return {
+            result = {
                 'symbol': ticker,
                 'name': info.get('longName', ticker),
                 'sector': info.get('sector', 'Unknown'),
@@ -78,10 +98,14 @@ class StockDataFetcher:
                 '52WeekHigh': info.get('fiftyTwoWeekHigh', 0),
                 '52WeekLow': info.get('fiftyTwoWeekLow', 0),
             }
+            self.info_cache[ticker] = result
+            return result
         except Exception as e:
             print(f"Error fetching info for {ticker}: {e}")
             # Fallback to mock data
-            return get_mock_stock_info(ticker)
+            mock_info = get_mock_stock_info(ticker)
+            self.info_cache[ticker] = mock_info
+            return mock_info
             
     def calculate_technical_indicators(self, df: pd.DataFrame) -> Dict:
         """Calculate technical indicators"""
