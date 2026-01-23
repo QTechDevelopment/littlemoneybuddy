@@ -68,7 +68,7 @@ class StockDataFetcher:
             if df.empty:
                 # Fallback to mock data
                 print(f"Using mock data for {ticker}")
-                return generate_mock_stock_data(ticker, period)
+                df = generate_mock_stock_data(ticker, period)
             
             # Store in cache with timestamp
             self.cache[cache_key] = (df, datetime.now())
@@ -81,9 +81,16 @@ class StockDataFetcher:
             return df.copy()
         except Exception as e:
             print(f"Error fetching data for {ticker}: {e}")
-            # Fallback to mock data
+            # Fallback to mock data and cache it
             print(f"Using mock data for {ticker}")
-            return generate_mock_stock_data(ticker, period)
+            df = generate_mock_stock_data(ticker, period)
+            self.cache[cache_key] = (df, datetime.now())
+            
+            # Enforce max cache size (LRU eviction)
+            if len(self.cache) > self.MAX_CACHE_SIZE:
+                self.cache.popitem(last=False)
+            
+            return df.copy()
             
     def get_current_price(self, ticker: str) -> Optional[float]:
         """Get current stock price"""
@@ -118,19 +125,19 @@ class StockDataFetcher:
             # Check if we got valid data
             if not info or 'symbol' not in info:
                 # Fallback to mock data
-                return get_mock_stock_info(ticker)
-            
-            result = {
-                'symbol': ticker,
-                'name': info.get('longName', ticker),
-                'sector': info.get('sector', 'Unknown'),
-                'industry': info.get('industry', 'Unknown'),
-                'marketCap': info.get('marketCap', 0),
-                'peRatio': info.get('trailingPE', 0),
-                'dividendYield': info.get('dividendYield', 0),
-                '52WeekHigh': info.get('fiftyTwoWeekHigh', 0),
-                '52WeekLow': info.get('fiftyTwoWeekLow', 0),
-            }
+                result = get_mock_stock_info(ticker)
+            else:
+                result = {
+                    'symbol': ticker,
+                    'name': info.get('longName', ticker),
+                    'sector': info.get('sector', 'Unknown'),
+                    'industry': info.get('industry', 'Unknown'),
+                    'marketCap': info.get('marketCap', 0),
+                    'peRatio': info.get('trailingPE', 0),
+                    'dividendYield': info.get('dividendYield', 0),
+                    '52WeekHigh': info.get('fiftyTwoWeekHigh', 0),
+                    '52WeekLow': info.get('fiftyTwoWeekLow', 0),
+                }
             
             # Store in cache with timestamp
             self.info_cache[ticker] = (result, datetime.now())
@@ -143,8 +150,15 @@ class StockDataFetcher:
             return result.copy()
         except Exception as e:
             print(f"Error fetching info for {ticker}: {e}")
-            # Fallback to mock data
-            return get_mock_stock_info(ticker)
+            # Fallback to mock data and cache it
+            result = get_mock_stock_info(ticker)
+            self.info_cache[ticker] = (result, datetime.now())
+            
+            # Enforce max cache size (LRU eviction)
+            if len(self.info_cache) > self.MAX_CACHE_SIZE:
+                self.info_cache.popitem(last=False)
+            
+            return result.copy()
             
     def calculate_technical_indicators(self, df: pd.DataFrame) -> Dict:
         """Calculate technical indicators"""
