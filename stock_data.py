@@ -6,16 +6,34 @@ Fetches and processes stock market data
 import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
+from collections import OrderedDict
 from mock_data import generate_mock_stock_data, get_mock_stock_info
 
 
 class StockDataFetcher:
     """Fetches and caches stock market data"""
     
+    # Cache configuration
+    MAX_CACHE_SIZE = 100  # Maximum number of entries in each cache
+    CACHE_TTL_SECONDS = {
+        '1d': 300,      # 5 minutes for 1 day data
+        '5d': 600,      # 10 minutes for 5 day data
+        '1mo': 1800,    # 30 minutes for 1 month data
+        '3mo': 3600,    # 1 hour for 3 month data
+        '6mo': 7200,    # 2 hours for 6 month data
+        '1y': 14400,    # 4 hours for 1 year data
+        '2y': 28800,    # 8 hours for 2 year data
+        '5y': 86400,    # 24 hours for 5 year data
+        '10y': 86400,   # 24 hours for 10 year data
+        'ytd': 3600,    # 1 hour for year-to-date
+        'max': 86400,   # 24 hours for max period
+    }
+    INFO_CACHE_TTL_SECONDS = 3600  # 1 hour for stock info
+    
     def __init__(self):
-        self.cache = {}
-        self.info_cache = {}
+        self.cache: OrderedDict[Tuple[str, str], Tuple[pd.DataFrame, datetime]] = OrderedDict()
+        self.info_cache: OrderedDict[str, Tuple[Dict, datetime]] = OrderedDict()
         
     def get_stock_data(self, ticker: str, period: str = "3mo") -> Optional[pd.DataFrame]:
         """
@@ -31,7 +49,17 @@ class StockDataFetcher:
         # Check cache first
         cache_key = (ticker, period)
         if cache_key in self.cache:
-            return self.cache[cache_key]
+            cached_df, cached_time = self.cache[cache_key]
+            # Check if cache entry is still valid based on TTL
+            ttl = self.CACHE_TTL_SECONDS.get(period, 3600)  # Default to 1 hour if period not found
+            if (datetime.now() - cached_time).total_seconds() < ttl:
+                # Move to end to mark as recently used (LRU)
+                self.cache.move_to_end(cache_key)
+                # Return a copy to prevent data corruption
+                return cached_df.copy()
+            else:
+                # Cache entry expired, remove it
+                del self.cache[cache_key]
 
         try:
             stock = yf.Ticker(ticker)
@@ -41,9 +69,16 @@ class StockDataFetcher:
                 # Fallback to mock data
                 print(f"Using mock data for {ticker}")
                 return generate_mock_stock_data(ticker, period)
-                
-            self.cache[cache_key] = df
-            return df
+            
+            # Store in cache with timestamp
+            self.cache[cache_key] = (df, datetime.now())
+            
+            # Enforce max cache size (LRU eviction)
+            if len(self.cache) > self.MAX_CACHE_SIZE:
+                self.cache.popitem(last=False)  # Remove oldest (least recently used)
+            
+            # Return a copy to prevent data corruption
+            return df.copy()
         except Exception as e:
             print(f"Error fetching data for {ticker}: {e}")
             # Fallback to mock data
@@ -65,7 +100,16 @@ class StockDataFetcher:
     def get_stock_info(self, ticker: str) -> Dict:
         """Get stock information"""
         if ticker in self.info_cache:
-            return self.info_cache[ticker]
+            cached_info, cached_time = self.info_cache[ticker]
+            # Check if cache entry is still valid based on TTL
+            if (datetime.now() - cached_time).total_seconds() < self.INFO_CACHE_TTL_SECONDS:
+                # Move to end to mark as recently used (LRU)
+                self.info_cache.move_to_end(ticker)
+                # Return a copy to prevent data corruption
+                return cached_info.copy()
+            else:
+                # Cache entry expired, remove it
+                del self.info_cache[ticker]
 
         try:
             stock = yf.Ticker(ticker)
@@ -87,8 +131,16 @@ class StockDataFetcher:
                 '52WeekHigh': info.get('fiftyTwoWeekHigh', 0),
                 '52WeekLow': info.get('fiftyTwoWeekLow', 0),
             }
-            self.info_cache[ticker] = result
-            return result
+            
+            # Store in cache with timestamp
+            self.info_cache[ticker] = (result, datetime.now())
+            
+            # Enforce max cache size (LRU eviction)
+            if len(self.info_cache) > self.MAX_CACHE_SIZE:
+                self.info_cache.popitem(last=False)  # Remove oldest (least recently used)
+            
+            # Return a copy to prevent data corruption
+            return result.copy()
         except Exception as e:
             print(f"Error fetching info for {ticker}: {e}")
             # Fallback to mock data
