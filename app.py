@@ -83,6 +83,9 @@ def analyze_portfolio(tickers: list, period: str, investment_amount: float,
     if not tickers:
         return []
     
+    # Pre-fetch data for all tickers to optimize performance
+    stock_fetcher.fetch_batch_data(tickers, period)
+
     results = []
     per_stock_amount = investment_amount / len(tickers)
     
