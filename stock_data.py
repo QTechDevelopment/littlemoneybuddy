@@ -15,7 +15,43 @@ class StockDataFetcher:
     
     def __init__(self):
         self.cache = {}
+        self.info_cache = {}
         
+    def fetch_batch_data(self, tickers: List[str], period: str = "3mo"):
+        """
+        Fetch data for multiple tickers in batch
+
+        Args:
+            tickers: List of stock ticker symbols
+            period: Time period
+        """
+        if not tickers:
+            return
+
+        try:
+            # Join tickers with space
+            tickers_str = " ".join(tickers)
+            # Fetch data with group_by='ticker' to ensure structured response
+            data = yf.download(tickers_str, period=period, group_by='ticker', threads=True, progress=False)
+
+            if data.empty:
+                return
+
+            # Handle MultiIndex response (multiple tickers or single ticker with forced structure)
+            if isinstance(data.columns, pd.MultiIndex):
+                for ticker in tickers:
+                    if ticker in data.columns.levels[0]:
+                        ticker_data = data[ticker].dropna(how='all')
+                        if not ticker_data.empty:
+                            self.cache[(ticker, period)] = ticker_data
+
+            # Handle single ticker response (if yfinance returns flat DF for single valid ticker)
+            elif len(tickers) == 1 and not data.empty:
+                self.cache[(tickers[0], period)] = data
+
+        except Exception as e:
+            print(f"Batch fetch failed: {e}")
+
     def get_stock_data(self, ticker: str, period: str = "3mo") -> Optional[pd.DataFrame]:
         """
         Fetch stock data from Yahoo Finance
@@ -27,6 +63,10 @@ class StockDataFetcher:
         Returns:
             DataFrame with stock data or None if failed
         """
+        # Check cache first
+        if (ticker, period) in self.cache:
+            return self.cache[(ticker, period)]
+
         try:
             stock = yf.Ticker(ticker)
             df = stock.history(period=period)
@@ -36,7 +76,7 @@ class StockDataFetcher:
                 print(f"Using mock data for {ticker}")
                 return generate_mock_stock_data(ticker, period)
                 
-            self.cache[ticker] = df
+            self.cache[(ticker, period)] = df
             return df
         except Exception as e:
             print(f"Error fetching data for {ticker}: {e}")
@@ -58,6 +98,10 @@ class StockDataFetcher:
             
     def get_stock_info(self, ticker: str) -> Dict:
         """Get stock information"""
+        # Check cache first
+        if ticker in self.info_cache:
+            return self.info_cache[ticker]
+
         try:
             stock = yf.Ticker(ticker)
             info = stock.info
@@ -65,9 +109,11 @@ class StockDataFetcher:
             # Check if we got valid data
             if not info or 'symbol' not in info:
                 # Fallback to mock data
-                return get_mock_stock_info(ticker)
+                result = get_mock_stock_info(ticker)
+                self.info_cache[ticker] = result
+                return result
             
-            return {
+            result = {
                 'symbol': ticker,
                 'name': info.get('longName', ticker),
                 'sector': info.get('sector', 'Unknown'),
@@ -78,10 +124,14 @@ class StockDataFetcher:
                 '52WeekHigh': info.get('fiftyTwoWeekHigh', 0),
                 '52WeekLow': info.get('fiftyTwoWeekLow', 0),
             }
+            self.info_cache[ticker] = result
+            return result
         except Exception as e:
             print(f"Error fetching info for {ticker}: {e}")
             # Fallback to mock data
-            return get_mock_stock_info(ticker)
+            result = get_mock_stock_info(ticker)
+            self.info_cache[ticker] = result
+            return result
             
     def calculate_technical_indicators(self, df: pd.DataFrame) -> Dict:
         """Calculate technical indicators"""
