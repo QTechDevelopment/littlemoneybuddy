@@ -28,7 +28,7 @@ Before deploying, ensure:
    - Click "New app"
    - Select:
      - Repository: `QTechDevelopment/littlemoneybuddy`
-     - Branch: `copilot/sub-pr-17` (or your current branch)
+     - Branch: `main` (or your feature branch for testing)
      - Main file path: `app.py`
    - Click "Deploy"
 
@@ -144,7 +144,10 @@ heroku create littlemoneybuddy
 heroku buildpacks:set heroku/python
 
 # Deploy
-git push heroku copilot/sub-pr-17:main
+git push heroku main
+
+# Or if deploying from a feature branch:
+git push heroku your-branch-name:main
 
 # Open app
 heroku open
@@ -245,7 +248,7 @@ Once deployed, monitor:
 
 **For immediate testing, use Streamlit Community Cloud:**
 
-1. Push your code: `git push origin copilot/sub-pr-17`
+1. Push your code: `git push origin main` (or your branch)
 2. Go to: https://share.streamlit.io
 3. Deploy in 3 clicks
 4. Share the URL for testing
