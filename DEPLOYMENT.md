@@ -261,7 +261,7 @@ Once deployed, monitor:
 
 ### App won't start
 - Check `requirements.txt` is complete
-- Verify Python version compatibility (3.8+)
+- Verify Python version compatibility (3.9+)
 - Check platform logs for errors
 
 ### Stock data not loading
