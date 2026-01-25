@@ -38,7 +38,8 @@ class TestStockDataOptimization(unittest.TestCase):
         mock_yf.download.assert_called_once()
         args, kwargs = mock_yf.download.call_args
         self.assertEqual(kwargs['group_by'], 'ticker')
-        self.assertIn('AAPL', kwargs['tickers'] if 'tickers' in kwargs else args[0])
+        # Tickers are passed as first positional argument (list)
+        self.assertIn('AAPL', args[0])
 
         # Verify cache population
         self.assertIn(('AAPL', period), self.fetcher.cache)
@@ -103,6 +104,86 @@ class TestStockDataOptimization(unittest.TestCase):
 
         self.assertIn(('TSLA', period), self.fetcher.cache)
         pd.testing.assert_frame_equal(self.fetcher.cache[('TSLA', period)], data)
+
+    @patch('stock_data.yf')
+    def test_fetch_batch_handles_exception(self, mock_yf):
+        # Test that exceptions during batch fetch are handled gracefully
+        tickers = ['AAPL', 'MSFT']
+        period = '1mo'
+        
+        # Make download raise an exception
+        mock_yf.download.side_effect = Exception("API error")
+        
+        # Should not raise, just print error
+        self.fetcher.fetch_batch_data(tickers, period)
+        
+        # Cache should remain empty
+        self.assertNotIn(('AAPL', period), self.fetcher.cache)
+        self.assertNotIn(('MSFT', period), self.fetcher.cache)
+
+    @patch('stock_data.yf')
+    def test_fetch_batch_handles_empty_dataframe(self, mock_yf):
+        # Test handling of empty DataFrame response
+        tickers = ['INVALID1', 'INVALID2']
+        period = '1mo'
+        
+        # Return empty DataFrame
+        mock_yf.download.return_value = pd.DataFrame()
+        
+        self.fetcher.fetch_batch_data(tickers, period)
+        
+        # Cache should not be populated
+        self.assertNotIn(('INVALID1', period), self.fetcher.cache)
+        self.assertNotIn(('INVALID2', period), self.fetcher.cache)
+
+    @patch('stock_data.yf')
+    def test_fetch_batch_partial_success(self, mock_yf):
+        # Test scenario where some tickers return data and others don't
+        tickers = ['AAPL', 'INVALID', 'MSFT']
+        period = '1mo'
+        
+        # Create DataFrame with only AAPL and MSFT data
+        columns = pd.MultiIndex.from_product([['AAPL', 'MSFT'], ['Open', 'Close', 'High', 'Low', 'Volume']], names=['Ticker', 'Price'])
+        data = pd.DataFrame(index=range(5), columns=columns)
+        data.loc[:, ('AAPL', 'Close')] = 150.0
+        data.loc[:, ('MSFT', 'Close')] = 300.0
+        
+        mock_yf.download.return_value = data
+        
+        self.fetcher.fetch_batch_data(tickers, period)
+        
+        # Valid tickers should be cached
+        self.assertIn(('AAPL', period), self.fetcher.cache)
+        self.assertIn(('MSFT', period), self.fetcher.cache)
+        # Invalid ticker should not be cached
+        self.assertNotIn(('INVALID', period), self.fetcher.cache)
+
+    @patch('stock_data.yf')
+    def test_fetch_batch_empty_ticker_list(self, mock_yf):
+        # Test with empty ticker list
+        self.fetcher.fetch_batch_data([])
+        
+        # Should not call download
+        mock_yf.download.assert_not_called()
+
+    @patch('stock_data.yf')
+    def test_fetch_batch_all_nan_data(self, mock_yf):
+        # Test handling of DataFrame with all NaN values
+        tickers = ['AAPL', 'MSFT']
+        period = '1mo'
+        
+        # Create DataFrame with all NaN values
+        columns = pd.MultiIndex.from_product([tickers, ['Open', 'Close', 'High', 'Low', 'Volume']], names=['Ticker', 'Price'])
+        data = pd.DataFrame(index=range(5), columns=columns)
+        # Leave all values as NaN
+        
+        mock_yf.download.return_value = data
+        
+        self.fetcher.fetch_batch_data(tickers, period)
+        
+        # Tickers with all NaN should not be cached (due to dropna and empty check)
+        self.assertNotIn(('AAPL', period), self.fetcher.cache)
+        self.assertNotIn(('MSFT', period), self.fetcher.cache)
 
 if __name__ == '__main__':
     unittest.main()
