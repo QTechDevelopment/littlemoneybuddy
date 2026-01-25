@@ -12,7 +12,7 @@ echo ""
 
 # Install dependencies
 echo "📦 Installing dependencies..."
-pip install -q -r requirements.txt
+python -m pip install -q -r requirements.txt
 echo "✓ Dependencies installed"
 echo ""
 
