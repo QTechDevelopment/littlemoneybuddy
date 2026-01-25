@@ -1,5 +1,6 @@
 #!/bin/bash
 # Quick deployment test script
+set -euo pipefail
 
 echo "🚀 Little Money Buddy - Deployment Verification"
 echo "================================================"

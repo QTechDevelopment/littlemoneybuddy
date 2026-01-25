@@ -111,9 +111,16 @@ docker push yourusername/littlemoneybuddy:latest
 
 #### Steps:
 
-1. **Create Heroku-specific files**
+1. **Heroku configuration**
 
-Create `setup.sh`:
+The included `Procfile` is ready to use:
+```
+web: streamlit run app.py --server.port=$PORT --server.address=0.0.0.0
+```
+
+This automatically uses the `.streamlit/config.toml` in the repository.
+
+**Optional**: If you need custom runtime configuration, create `setup.sh`:
 ```bash
 mkdir -p ~/.streamlit/
 
@@ -126,7 +133,7 @@ enableCORS = false\n\
 " > ~/.streamlit/config.toml
 ```
 
-Create `Procfile`:
+Then update the Procfile to:
 ```
 web: sh setup.sh && streamlit run app.py
 ```
