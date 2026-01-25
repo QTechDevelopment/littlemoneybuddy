@@ -27,6 +27,11 @@ class StockDataFetcher:
         Returns:
             DataFrame with stock data or None if failed
         """
+        # Check cache first
+        cache_key = (ticker, period)
+        if cache_key in self.cache:
+            return self.cache[cache_key]
+
         try:
             stock = yf.Ticker(ticker)
             df = stock.history(period=period)
@@ -34,15 +39,55 @@ class StockDataFetcher:
             if df.empty:
                 # Fallback to mock data
                 print(f"Using mock data for {ticker}")
-                return generate_mock_stock_data(ticker, period)
+                df = generate_mock_stock_data(ticker, period)
+                self.cache[cache_key] = df
+                return df
                 
-            self.cache[ticker] = df
+            self.cache[cache_key] = df
             return df
         except Exception as e:
             print(f"Error fetching data for {ticker}: {e}")
             # Fallback to mock data
             print(f"Using mock data for {ticker}")
-            return generate_mock_stock_data(ticker, period)
+            df = generate_mock_stock_data(ticker, period)
+            self.cache[cache_key] = df
+            return df
+
+    def fetch_batch_data(self, tickers: List[str], period: str = "3mo"):
+        """
+        Fetch data for multiple tickers in one go to populate cache.
+
+        Args:
+            tickers: List of stock ticker symbols
+            period: Time period
+        """
+        # Filter out tickers already in cache
+        tickers_to_fetch = [t for t in tickers if (t, period) not in self.cache]
+
+        if not tickers_to_fetch:
+            return
+
+        try:
+            # Join tickers with space
+            tickers_str = " ".join(tickers_to_fetch)
+            data = yf.download(tickers_str, period=period, group_by='ticker', progress=False)
+
+            if not data.empty:
+                if isinstance(data.columns, pd.MultiIndex):
+                    # MultiIndex columns: (Ticker, Price)
+                    for ticker in data.columns.levels[0]:
+                        # Extract data for this ticker
+                        ticker_data = data[ticker]
+                        # Check if data is valid (not all NaNs or empty)
+                        if not ticker_data.empty:
+                            self.cache[(ticker, period)] = ticker_data
+                elif len(tickers_to_fetch) == 1:
+                    # Single ticker result
+                    self.cache[(tickers_to_fetch[0], period)] = data
+
+        except Exception as e:
+            print(f"Batch fetch failed: {e}")
+            # Individual fetch will handle fallbacks later
             
     def get_current_price(self, ticker: str) -> Optional[float]:
         """Get current stock price"""
