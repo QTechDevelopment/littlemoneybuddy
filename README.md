@@ -59,11 +59,29 @@ pip install -r requirements.txt
 
 ### Running the Dashboard
 
+#### Local Development
 ```bash
 streamlit run app.py
 ```
 
 The dashboard will open in your browser at `http://localhost:8501`
+
+#### Deployment for Testing
+
+For detailed deployment instructions to various platforms, see **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+
+**Quick deploy to Streamlit Community Cloud (Recommended):**
+1. Push your code to GitHub
+2. Go to [share.streamlit.io](https://share.streamlit.io)
+3. Connect your repository and deploy in 3 clicks
+4. Get a public URL to share: `https://[app-name].streamlit.app`
+
+**Other deployment options:**
+- 🐳 Docker (see `Dockerfile`)
+- 🚀 Heroku (see `Procfile`)
+- 🎨 Render (see `render.yaml`)
+- 🚂 Railway
+- And more in [DEPLOYMENT.md](DEPLOYMENT.md)
 
 ## 📖 Usage
 

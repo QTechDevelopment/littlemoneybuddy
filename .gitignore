@@ -35,6 +35,6 @@ wheels/
 Thumbs.db
 
 # Project specific
-.streamlit/
+.streamlit/secrets.toml
 *.log
 data/cache/
