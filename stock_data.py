@@ -11,9 +11,17 @@ from mock_data import generate_mock_stock_data, get_mock_stock_info
 
 
 class StockDataFetcher:
-    """Fetches and caches stock market data"""
+    """
+    Fetches and caches stock market data
+    
+    Note: This class is not thread-safe. Cache dictionaries are accessed without
+    synchronization. If concurrent access is required, implement appropriate locking
+    mechanisms or use a single instance per thread.
+    """
     
     def __init__(self):
+        # TODO: Consider implementing cache size limits (e.g., LRU eviction) and
+        # time-based expiration to prevent unbounded growth and stale data
         self.cache = {}
         self.info_cache = {}
         
@@ -29,18 +37,17 @@ class StockDataFetcher:
             return
 
         try:
-            # Join tickers with space
-            tickers_str = " ".join(tickers)
             # Fetch data with group_by='ticker' to ensure structured response
-            data = yf.download(tickers_str, period=period, group_by='ticker', threads=True, progress=False)
+            data = yf.download(tickers, period=period, group_by='ticker', threads=True, progress=False)
 
             if data.empty:
                 return
 
             # Handle MultiIndex response (multiple tickers or single ticker with forced structure)
             if isinstance(data.columns, pd.MultiIndex):
+                column_tickers = data.columns.get_level_values(0).unique()
                 for ticker in tickers:
-                    if ticker in data.columns.levels[0]:
+                    if ticker in column_tickers:
                         ticker_data = data[ticker].dropna(how='all')
                         if not ticker_data.empty:
                             self.cache[(ticker, period)] = ticker_data
