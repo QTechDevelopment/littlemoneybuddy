@@ -5,3 +5,7 @@
 ## 2024-05-23 - Batch Data Fetching
 **Learning:** `yfinance` allows batch fetching via `download(tickers_list)`. This reduces N+1 HTTP requests to 1 request.
 **Action:** Prefer `fetch_batch_data` pattern for pre-loading data when the set of keys (tickers) is known in advance (e.g., in a loop).
+
+## 2024-05-24 - Uncached Metadata Fetching
+**Learning:** `StockDataFetcher.get_stock_info` was fetching data from `yfinance` on every call, causing significant delays when analyzing lists of stocks (sequential HTTP requests).
+**Action:** Always verify if metadata/static info is cached, especially when called in loops. Implemented `info_cache` to resolve this.
