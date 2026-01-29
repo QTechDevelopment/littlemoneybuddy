@@ -65,6 +65,16 @@ streamlit run app.py
 
 The dashboard will open in your browser at `http://localhost:8501`
 
+### 🌐 Deployment
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for comprehensive deployment guides to:
+- **Streamlit Community Cloud** (Recommended - Free & Easy)
+- Railway
+- Heroku
+- Google Cloud Run
+- AWS
+- Vercel (information page only)
+
 ## 📖 Usage
 
 1. **Enter a stock ticker** (e.g., AAPL, GOOGL, MSFT) in the sidebar
