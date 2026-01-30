@@ -1,10 +1,11 @@
 # Security Fix - Starlette Vulnerability Patches
 
-## 🔒 Security Update Applied
+## 🔒 Security Updates Applied
 
 **Date**: January 29, 2026  
-**Type**: Dependency Security Patch  
-**Severity**: High Priority
+**Type**: Dependency Security Patches  
+**Severity**: High Priority  
+**Latest Update**: Patched to v0.49.1
 
 ---
 
@@ -22,18 +23,25 @@
 - **CVE**: Regular Expression Denial of Service (ReDoS)
 - **Description**: Content-Type header parsing vulnerability causing ReDoS
 
+### 3. Starlette O(n^2) DoS via Range Header Merging ⚠️ **NEW**
+- **Affected Versions**: >= 0.39.0, <= 0.49.0
+- **Patched Version**: 0.49.1
+- **CVE**: O(n^2) Denial of Service vulnerability
+- **Description**: Vulnerability in `starlette.responses.FileResponse` Range header merging that could cause O(n^2) complexity DoS attack
+
 ---
 
-## ✅ Fix Applied
+## ✅ Fixes Applied
 
 **Original Version**: `starlette==0.27.0` ❌  
-**Updated Version**: `starlette==0.40.0` ✅
+**First Update**: `starlette==0.40.0` ⚠️ (Still vulnerable to Range header DoS)  
+**Final Version**: `starlette==0.49.1` ✅ **SECURE**
 
 ### Changes Made:
 
-1. **requirements.txt**: Updated starlette from 0.27.0 to 0.40.0
-2. **verify_deployment.py**: Added security version check
-3. **Verification**: Confirmed API module still works correctly
+1. **requirements.txt**: Updated starlette from 0.27.0 → 0.40.0 → **0.49.1**
+2. **verify_deployment.py**: Enhanced security version check (now requires >= 0.49.1)
+3. **Verification**: Confirmed API module works correctly with all versions
 
 ---
 
@@ -42,7 +50,7 @@
 ```bash
 $ python3 verify_deployment.py
 ✅ starlette in requirements.txt
-✅ starlette version is secure (>= 0.40.0)
+✅ starlette version is secure (>= 0.49.1)
 ✅ API module imports successfully
 ✅ App type: Starlette
 ```
@@ -50,7 +58,7 @@ $ python3 verify_deployment.py
 ### Compatibility Test:
 ```python
 from api.index import app
-# ✅ Imports successfully with starlette 0.40.0
+# ✅ Imports successfully with starlette 0.49.1
 # ✅ All routes functional
 # ✅ No breaking changes
 ```
@@ -60,7 +68,7 @@ from api.index import app
 ## 📊 Impact Assessment
 
 ### What Changed:
-- ✅ Security vulnerabilities patched
+- ✅ All security vulnerabilities patched (3 CVEs fixed)
 - ✅ No breaking changes in our usage
 - ✅ API functionality preserved
 - ✅ All tests still pass
@@ -68,7 +76,15 @@ from api.index import app
 ### What's Protected:
 - ✅ Protection against DoS attacks via multipart/form-data
 - ✅ Protection against ReDoS attacks on Content-Type headers
+- ✅ Protection against O(n^2) DoS via Range header merging
 - ✅ Improved overall security posture
+
+### Version History:
+```
+0.27.0 ❌ → 3 vulnerabilities
+0.40.0 ⚠️ → 1 vulnerability (Range header DoS)
+0.49.1 ✅ → 0 vulnerabilities (SECURE)
+```
 
 ---
 

@@ -35,14 +35,17 @@ def main():
             has_starlette = 'starlette' in deps
             print(f"{'✅' if has_starlette else '❌'} starlette in requirements.txt")
             
-            # Check for secure version (>= 0.40.0)
-            if 'starlette==0.40.0' in deps or 'starlette>=0.40.0' in deps:
-                print(f"✅ starlette version is secure (>= 0.40.0)")
+            # Check for secure version (>= 0.49.1 to avoid Range header DoS)
+            if 'starlette==0.49.1' in deps or 'starlette>=0.49.1' in deps:
+                print(f"✅ starlette version is secure (>= 0.49.1)")
+            elif 'starlette==0.40.0' in deps:
+                print(f"⚠️  starlette 0.40.0 has Range header DoS vulnerability - should be >= 0.49.1")
+                all_exist = False
             elif 'starlette' in deps and '0.27.0' in deps:
-                print(f"⚠️  starlette 0.27.0 has known vulnerabilities - should be >= 0.40.0")
+                print(f"⚠️  starlette 0.27.0 has known vulnerabilities - should be >= 0.49.1")
                 all_exist = False
             elif 'starlette' in deps:
-                print(f"⚠️  Check starlette version for security vulnerabilities")
+                print(f"⚠️  Check starlette version for security vulnerabilities (should be >= 0.49.1)")
     except Exception as e:
         print(f"❌ Error reading requirements.txt: {e}")
         all_exist = False
