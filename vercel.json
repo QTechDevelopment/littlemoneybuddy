@@ -1,15 +1,25 @@
 {
+ copilot/deploy-to-vercel
   "version": 2,
   "builds": [
     {
       "src": "api/index.py",
+=======
+  "builds": [
+    {
+      "src": "app.py",
+ main
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
+ copilot/deploy-to-vercel
       "dest": "api/index.py"
+=======
+      "dest": "app.py"
+ main
     }
   ]
 }

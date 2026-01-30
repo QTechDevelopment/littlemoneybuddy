@@ -6,6 +6,17 @@ An interactive AI-powered dashboard that combines **multi-agent systems**, **gam
 ![Streamlit](https://img.shields.io/badge/streamlit-1.31.0-FF4B4B.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
+## 📸 UI Preview
+
+Explore the terminal-style cyberpunk interface of the GTSA dashboard. View detailed screenshots and UI documentation in the **[UI Showcase](docs/UI_SHOWCASE.md)**.
+
+<div align="center">
+  <img src="docs/screenshots/01-landing-page.png" alt="GTSA Landing Page" width="45%">
+  <img src="docs/screenshots/02-single-stock-analysis.png" alt="Stock Analysis View" width="45%">
+</div>
+
+> 💡 **See all screenshots and detailed UI documentation**: [docs/UI_SHOWCASE.md](docs/UI_SHOWCASE.md)
+
 ## 🌟 Features
 
 ### 🤖 Multi-Agent AI System
@@ -199,6 +210,12 @@ This dashboard integrates concepts from:
 - **textblob**: NLP sentiment analysis
 - **scipy**: Scientific computing
 - **scikit-learn**: Machine learning utilities
+
+## 📸 Screenshots & Documentation
+
+For detailed screenshots of all pages and comprehensive UI documentation, see:
+- **[UI Showcase](docs/UI_SHOWCASE.md)** - Complete visual tour of the application
+- **[Screenshots Directory](docs/screenshots/)** - High-resolution images of all views
 
 ## 🤝 Contributing
 
