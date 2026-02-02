@@ -5,3 +5,7 @@
 ## 2024-05-23 - Batch Data Fetching
 **Learning:** `yfinance` allows batch fetching via `download(tickers_list)`. This reduces N+1 HTTP requests to 1 request.
 **Action:** Prefer `fetch_batch_data` pattern for pre-loading data when the set of keys (tickers) is known in advance (e.g., in a loop).
+
+## 2024-05-24 - yfinance Info Caching
+**Learning:** `yfinance`'s `.info` property triggers a separate API call per ticker and does not support batching. Repeated access in loops causes severe performance degradation.
+**Action:** Always cache `.info` results in a separate dictionary (e.g., `info_cache`) to avoid redundant API calls.

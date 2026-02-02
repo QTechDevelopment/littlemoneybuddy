@@ -67,5 +67,41 @@ class TestStockDataFetcher(unittest.TestCase):
         pd.testing.assert_frame_equal(result, data)
         mock_yf.Ticker.assert_not_called()
 
+    @patch('stock_data.yf')
+    def test_get_stock_info_caching(self, mock_yf):
+        # Setup mock return
+        mock_ticker = MagicMock()
+        mock_ticker.info = {
+            'symbol': 'AAPL',
+            'longName': 'Apple Inc.',
+            'sector': 'Technology',
+            'industry': 'Consumer Electronics',
+            'marketCap': 2000000000000,
+            'trailingPE': 30.5,
+            'dividendYield': 0.005,
+            'fiftyTwoWeekHigh': 180.0,
+            'fiftyTwoWeekLow': 130.0
+        }
+        mock_yf.Ticker.return_value = mock_ticker
+
+        # First call - should hit API
+        info1 = self.fetcher.get_stock_info('AAPL')
+
+        # Verify first call results
+        self.assertEqual(info1['symbol'], 'AAPL')
+        self.assertEqual(info1['name'], 'Apple Inc.')
+
+        # Second call - should use cache
+        info2 = self.fetcher.get_stock_info('AAPL')
+
+        # Verify results are identical
+        self.assertEqual(info1, info2)
+
+        # Verify API was only called once
+        mock_yf.Ticker.assert_called_once_with('AAPL')
+        # Accessing .info might happen multiple times if not cached properly,
+        # but since we create a new Ticker instance each time in the original code,
+        # asserting Ticker init count is a good proxy for API calls if the optimization works.
+
 if __name__ == '__main__':
     unittest.main()
