@@ -56,6 +56,9 @@ def parse_excel_tickers(uploaded_file) -> list:
         # Filter out empty strings - allow alphanumeric tickers and common formats like BRK.B
         tickers = [t for t in tickers if t and len(t) <= 10 and t.replace('.', '').replace('-', '').isalnum()]
         
+        if len(tickers) > 50:
+            st.warning(f"⚠️ Performance Limit: analyzing first 50 stocks (out of {len(tickers)} found).")
+
         return tickers[:50]  # Limit to 50 tickers for performance
     except Exception as e:
         st.error(f"Error parsing Excel file: {e}")
@@ -779,7 +782,8 @@ def main():
             ticker = st.text_input(
                 ">> TICKER_SYMBOL",
                 value="AAPL",
-                help="Enter stock ticker symbol (e.g., AAPL, GOOGL, MSFT)"
+                help="Enter stock ticker symbol (e.g., AAPL, GOOGL, MSFT)",
+                placeholder="e.g. NVDA"
             ).upper()
         
         # Time period
@@ -843,6 +847,8 @@ def main():
                             investment_strategy=st.session_state.investment_strategy
                         )
                         
+                        st.toast(f"Analysis Complete for {len(results)} stocks!", icon="✅")
+
                         # Display portfolio breakdown
                         st.markdown('<div class="sub-header">📊 PORTFOLIO_BREAKDOWN</div>', unsafe_allow_html=True)
                         
@@ -1001,6 +1007,8 @@ def main():
                         agent_decisions, composite_sentiment
                     )
                     
+                    st.toast("Analysis Complete!", icon="✅")
+
                     # Display results
                     st.markdown('<div class="sub-header">📡 STOCK_OVERVIEW</div>', unsafe_allow_html=True)
                     
