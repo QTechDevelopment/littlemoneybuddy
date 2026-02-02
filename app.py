@@ -245,81 +245,61 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom Terminal-Style CSS
+# Retro Monochrome Terminal CSS
 st.markdown("""
 <style>
-    /* Import terminal-style fonts */
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Fira+Code:wght@400;500;700&display=swap');
+    /* Import terminal-style font */
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
     
-    /* Global terminal styling */
+    /* Global monochrome styling */
     .stApp {
-        background-color: #0a0e14 !important;
-        background-image: 
-            repeating-linear-gradient(
-                0deg,
-                rgba(0, 255, 65, 0.03) 0px,
-                rgba(0, 255, 65, 0.03) 1px,
-                transparent 1px,
-                transparent 2px
-            );
+        background-color: #000000 !important;
+        font-family: 'JetBrains Mono', monospace !important;
     }
     
-    /* Override Streamlit's default text colors */
+    /* Override text colors to white */
     .stApp, .stApp p, .stApp span, .stApp label, .stApp div {
-        font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+        font-family: 'JetBrains Mono', monospace !important;
+        color: #ffffff !important;
     }
     
-    /* Main header - terminal prompt style */
+    /* Headers */
     .main-header {
         font-size: 2rem;
-        color: #00ff41;
+        color: #ffffff;
         font-weight: 700;
         margin-bottom: 1rem;
         font-family: 'JetBrains Mono', monospace !important;
-        text-shadow: 0 0 10px rgba(0, 255, 65, 0.7), 0 0 20px rgba(0, 255, 65, 0.5);
         letter-spacing: 2px;
     }
     
     .main-header::before {
         content: "$ ";
-        color: #00d4ff;
-        text-shadow: 0 0 10px rgba(0, 212, 255, 0.7);
     }
     
-    /* Sub headers */
     .sub-header {
         font-size: 1.2rem;
-        color: #00d4ff;
+        color: #ffffff;
         margin-top: 1.5rem;
         margin-bottom: 0.5rem;
         font-family: 'JetBrains Mono', monospace !important;
-        text-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
-        border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+        border-bottom: 1px dashed #ffffff;
         padding-bottom: 0.5rem;
     }
     
     .sub-header::before {
         content: "> ";
-        color: #00ff41;
     }
     
-    /* Terminal metric card */
-    .metric-card {
-        background-color: rgba(10, 14, 20, 0.9);
+    /* Cards */
+    .metric-card, .agent-card, .terminal-box {
+        background-color: #000000;
         padding: 1rem;
-        border-radius: 4px;
-        border: 1px solid #00ff41;
-        box-shadow: 0 0 10px rgba(0, 255, 65, 0.2), inset 0 0 20px rgba(0, 0, 0, 0.5);
-    }
-    
-    /* Agent card - terminal window style */
-    .agent-card {
-        background-color: rgba(10, 14, 20, 0.95);
-        padding: 1rem;
-        border-radius: 4px;
-        border: 1px solid #00d4ff;
+        border: 1px solid #ffffff;
         margin: 0.5rem 0;
-        box-shadow: 0 0 10px rgba(0, 212, 255, 0.15);
+    }
+    
+    .agent-card {
         position: relative;
     }
     
@@ -328,203 +308,102 @@ st.markdown("""
         position: absolute;
         top: -10px;
         left: 10px;
-        background: #0a0e14;
+        background: #000000;
         padding: 0 5px;
-        color: #00d4ff;
+        color: #ffffff;
         font-size: 0.7rem;
     }
     
-    /* Status colors */
+    /* Status colors - different shades for distinction */
     .bullish {
-        color: #00ff41 !important;
+        color: #ffffff !important;
         font-weight: bold;
-        text-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
     }
     .bearish {
-        color: #ff3e3e !important;
+        color: #888888 !important;
         font-weight: bold;
-        text-shadow: 0 0 8px rgba(255, 62, 62, 0.5);
     }
     .neutral {
-        color: #ffb000 !important;
+        color: #bbbbbb !important;
         font-weight: bold;
-        text-shadow: 0 0 8px rgba(255, 176, 0, 0.5);
     }
     
-    /* Sidebar styling */
+    /* Sidebar */
     section[data-testid="stSidebar"] {
-        background-color: #0d1117 !important;
-        border-right: 1px solid #00ff41 !important;
+        background-color: #000000 !important;
+        border-right: 1px solid #ffffff !important;
     }
     
     section[data-testid="stSidebar"] .stMarkdown {
-        color: #c0c0c0 !important;
+        color: #ffffff !important;
     }
     
-    /* Input fields - terminal style */
+    /* Input fields */
     .stTextInput input, .stNumberInput input, .stSelectbox select {
-        background-color: #0d1117 !important;
-        color: #00ff41 !important;
-        border: 1px solid #00ff41 !important;
+        background-color: #000000 !important;
+        color: #ffffff !important;
+        border: 1px solid #ffffff !important;
         font-family: 'JetBrains Mono', monospace !important;
     }
     
-    .stTextInput input:focus, .stNumberInput input:focus {
-        box-shadow: 0 0 10px rgba(0, 255, 65, 0.4) !important;
-    }
-    
-    /* Buttons - terminal style */
+    /* Buttons */
     .stButton > button {
-        background-color: transparent !important;
-        color: #00ff41 !important;
-        border: 1px solid #00ff41 !important;
+        background-color: #000000 !important;
+        color: #ffffff !important;
+        border: 1px solid #ffffff !important;
         font-family: 'JetBrains Mono', monospace !important;
         text-transform: uppercase;
         letter-spacing: 1px;
-        transition: all 0.3s ease;
     }
     
     .stButton > button:hover {
-        background-color: rgba(0, 255, 65, 0.1) !important;
-        box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
-        text-shadow: 0 0 10px rgba(0, 255, 65, 0.8);
+        background-color: #333333 !important;
     }
     
-    .stButton > button[kind="primary"] {
-        background-color: rgba(0, 255, 65, 0.15) !important;
-    }
-    
-    /* Info/Warning boxes */
-    .stAlert {
-        background-color: rgba(10, 14, 20, 0.9) !important;
-        border: 1px solid #00d4ff !important;
-        color: #c0c0c0 !important;
-    }
-    
-    /* Metrics styling */
-    [data-testid="stMetricValue"] {
-        color: #00ff41 !important;
-        font-family: 'JetBrains Mono', monospace !important;
-        text-shadow: 0 0 8px rgba(0, 255, 65, 0.4);
-    }
-    
-    [data-testid="stMetricLabel"] {
-        color: #00d4ff !important;
-        font-family: 'JetBrains Mono', monospace !important;
-    }
-    
-    [data-testid="stMetricDelta"] {
+    /* Metrics */
+    [data-testid="stMetricValue"], [data-testid="stMetricLabel"], [data-testid="stMetricDelta"] {
+        color: #ffffff !important;
         font-family: 'JetBrains Mono', monospace !important;
     }
     
     /* Progress bars */
     .stProgress > div > div {
-        background-color: #00ff41 !important;
-        box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+        background-color: #ffffff !important;
     }
     
-    /* Expander */
-    .streamlit-expanderHeader {
-        background-color: rgba(10, 14, 20, 0.9) !important;
-        border: 1px solid #00d4ff !important;
-        color: #00d4ff !important;
-    }
-    
-    /* Data frames */
-    .stDataFrame {
-        border: 1px solid #00ff41 !important;
-    }
-    
-    /* Scrollbar styling */
+    /* Scrollbar */
     ::-webkit-scrollbar {
         width: 8px;
         height: 8px;
     }
     
     ::-webkit-scrollbar-track {
-        background: #0a0e14;
+        background: #000000;
     }
     
     ::-webkit-scrollbar-thumb {
-        background: #00ff41;
-        border-radius: 4px;
+        background: #ffffff;
     }
     
-    ::-webkit-scrollbar-thumb:hover {
-        background: #00d4ff;
+    /* ASCII art header */
+    .ascii-header {
+        font-family: 'JetBrains Mono', monospace !important;
+        color: #ffffff;
+        font-size: 0.6rem;
+        line-height: 1.1;
+        white-space: pre;
+        margin-bottom: 1rem;
     }
     
-    /* Blinking cursor animation */
-    @keyframes blink {
-        0%, 50% { opacity: 1; }
-        51%, 100% { opacity: 0; }
-    }
-    
-    .cursor {
-        display: inline-block;
-        width: 10px;
-        height: 1.2em;
-        background-color: #00ff41;
-        margin-left: 2px;
-        animation: blink 1s infinite;
-    }
-    
-    /* Terminal box */
-    .terminal-box {
-        background-color: rgba(10, 14, 20, 0.95);
-        border: 1px solid #00ff41;
-        border-radius: 4px;
-        padding: 1rem;
-        margin: 0.5rem 0;
-        box-shadow: 0 0 15px rgba(0, 255, 65, 0.1), inset 0 0 30px rgba(0, 0, 0, 0.5);
-    }
-    
-    /* System message style */
+    /* System message */
     .sys-msg {
-        color: #00d4ff;
+        color: #ffffff;
         font-size: 0.9rem;
         font-family: 'JetBrains Mono', monospace !important;
     }
     
     .sys-msg::before {
         content: "[SYS] ";
-        color: #ffb000;
-    }
-    
-    /* ASCII art header styling */
-    .ascii-header {
-        font-family: 'JetBrains Mono', monospace !important;
-        color: #00ff41;
-        font-size: 0.6rem;
-        line-height: 1.1;
-        text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
-        white-space: pre;
-        margin-bottom: 1rem;
-    }
-    
-    /* Glitch effect for headers */
-    @keyframes glitch {
-        0% { text-shadow: 0 0 10px rgba(0, 255, 65, 0.7), 0 0 20px rgba(0, 255, 65, 0.5); }
-        25% { text-shadow: -2px 0 #ff3e3e, 2px 0 #00d4ff; }
-        50% { text-shadow: 0 0 10px rgba(0, 255, 65, 0.7), 0 0 20px rgba(0, 255, 65, 0.5); }
-        75% { text-shadow: 2px 0 #ff3e3e, -2px 0 #00d4ff; }
-        100% { text-shadow: 0 0 10px rgba(0, 255, 65, 0.7), 0 0 20px rgba(0, 255, 65, 0.5); }
-    }
-    
-    .glitch-text {
-        animation: glitch 3s infinite;
-    }
-    
-    /* Accessibility: Respect user's motion preferences */
-    @media (prefers-reduced-motion: reduce) {
-        .glitch-text {
-            animation: none;
-            text-shadow: 0 0 10px rgba(0, 255, 65, 0.7), 0 0 20px rgba(0, 255, 65, 0.5);
-        }
-        .cursor {
-            animation: none;
-            opacity: 1;
-        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -554,8 +433,8 @@ def create_price_chart(df, ticker):
         low=df['Low'],
         close=df['Close'],
         name='Price',
-        increasing_line_color='#00ff41',
-        decreasing_line_color='#ff3e3e'
+        increasing_line_color='#ffffff',
+        decreasing_line_color='#555555'
     ))
     
     # Add moving averages if enough data
@@ -564,7 +443,7 @@ def create_price_chart(df, ticker):
         fig.add_trace(go.Scatter(
             x=df.index, y=ma20,
             name='MA20',
-            line=dict(color='#ffb000', width=1)
+            line=dict(color='#888888', width=1, dash='dot')
         ))
     
     if len(df) >= 50:
@@ -572,23 +451,17 @@ def create_price_chart(df, ticker):
         fig.add_trace(go.Scatter(
             x=df.index, y=ma50,
             name='MA50',
-            line=dict(color='#00d4ff', width=1)
+            line=dict(color='#ffffff', width=1)
         ))
     
     fig.update_layout(
-        title=dict(text=f">> {ticker} PRICE_DATA", font=dict(color='#00ff41', family='JetBrains Mono, monospace')),
-        yaxis_title="PRICE (USD)",
-        xaxis_title="TIMESTAMP",
-        template="plotly_dark",
-        height=400,
-        xaxis_rangeslider_visible=False,
-        paper_bgcolor='rgba(10, 14, 20, 0.9)',
-        plot_bgcolor='rgba(10, 14, 20, 0.9)',
-        font=dict(family='JetBrains Mono, monospace', color='#00d4ff'),
-        xaxis=dict(gridcolor='rgba(0, 255, 65, 0.1)', showgrid=True),
-        yaxis=dict(gridcolor='rgba(0, 255, 65, 0.1)', showgrid=True)
+        plot_bgcolor='#000000',
+        paper_bgcolor='#000000',
+        font=dict(color='#ffffff', family='JetBrains Mono'),
+        xaxis=dict(showgrid=False, color='#ffffff'),
+        yaxis=dict(showgrid=True, gridcolor='#333333', color='#ffffff'),
+        margin=dict(l=10, r=10, t=10, b=10)
     )
-    
     return fig
 
 
@@ -601,8 +474,8 @@ def create_agent_decision_chart(decisions):
         'HOLD': actions.count('HOLD')
     }
     
-    # Terminal-style colors
-    colors = {'BUY': '#00ff41', 'SELL': '#ff3e3e', 'HOLD': '#ffb000'}
+    # Monochrome colors - all white/gray
+    colors = {'BUY': '#ffffff', 'SELL': '#aaaaaa', 'HOLD': '#777777'}
     
     fig = go.Figure(data=[
         go.Bar(
@@ -611,21 +484,17 @@ def create_agent_decision_chart(decisions):
             marker_color=[colors[k] for k in action_counts.keys()],
             text=list(action_counts.values()),
             textposition='auto',
-            textfont=dict(color='#0a0e14', family='JetBrains Mono, monospace', size=16)
+            textfont=dict(color='#000000', family='JetBrains Mono, monospace', size=16)
         )
     ])
     
     fig.update_layout(
-        title=dict(text=">> AGENT_DECISION_MATRIX", font=dict(color='#00ff41', family='JetBrains Mono, monospace')),
-        yaxis_title="AGENT_COUNT",
-        xaxis_title="ACTION",
-        template="plotly_dark",
-        height=300,
-        paper_bgcolor='rgba(10, 14, 20, 0.9)',
-        plot_bgcolor='rgba(10, 14, 20, 0.9)',
-        font=dict(family='JetBrains Mono, monospace', color='#00d4ff'),
-        xaxis=dict(gridcolor='rgba(0, 255, 65, 0.1)'),
-        yaxis=dict(gridcolor='rgba(0, 255, 65, 0.1)')
+        plot_bgcolor='#000000',
+        paper_bgcolor='#000000',
+        font=dict(family='JetBrains Mono, monospace', color='#ffffff'),
+        xaxis=dict(showgrid=False, color='#ffffff'),
+        yaxis=dict(showgrid=True, gridcolor='#333333', color='#ffffff'),
+        margin=dict(l=10, r=10, t=10, b=10)
     )
     
     return fig
@@ -637,22 +506,22 @@ def create_sentiment_gauge(sentiment_score):
         mode="gauge+number+delta",
         value=sentiment_score * 100,
         domain={'x': [0, 1], 'y': [0, 1]},
-        title={'text': "MARKET_SENTIMENT", 'font': {'size': 16, 'color': '#00ff41', 'family': 'JetBrains Mono, monospace'}},
-        delta={'reference': 50, 'increasing': {'color': "#00ff41"}, 'decreasing': {'color': "#ff3e3e"}},
-        number={'font': {'color': '#00ff41', 'family': 'JetBrains Mono, monospace'}},
+        title={'text': "MARKET_SENTIMENT", 'font': {'size': 16, 'color': '#ffffff', 'family': 'JetBrains Mono, monospace'}},
+        delta={'reference': 50, 'increasing': {'color': "#ffffff"}, 'decreasing': {'color': "#555555"}},
+        number={'font': {'color': '#ffffff', 'family': 'JetBrains Mono, monospace'}},
         gauge={
-            'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#00d4ff", 'tickfont': {'color': '#00d4ff'}},
-            'bar': {'color': "#00ff41"},
-            'bgcolor': "#0a0e14",
+            'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#ffffff", 'tickfont': {'color': '#ffffff'}},
+            'bar': {'color': "#ffffff"},
+            'bgcolor': "#000000",
             'borderwidth': 2,
-            'bordercolor': "#00d4ff",
+            'bordercolor': "#ffffff",
             'steps': [
-                {'range': [0, 30], 'color': 'rgba(255, 62, 62, 0.3)'},
-                {'range': [30, 70], 'color': 'rgba(255, 176, 0, 0.3)'},
-                {'range': [70, 100], 'color': 'rgba(0, 255, 65, 0.3)'}
+                {'range': [0, 30], 'color': '#1a1a1a'},
+                {'range': [30, 70], 'color': '#404040'},
+                {'range': [70, 100], 'color': '#666666'}
             ],
             'threshold': {
-                'line': {'color': "#00d4ff", 'width': 4},
+                'line': {'color': "#ffffff", 'width': 4},
                 'thickness': 0.75,
                 'value': 50
             }
@@ -661,8 +530,8 @@ def create_sentiment_gauge(sentiment_score):
     
     fig.update_layout(
         height=250,
-        paper_bgcolor='rgba(10, 14, 20, 0.9)',
-        font=dict(family='JetBrains Mono, monospace', color='#00d4ff')
+        paper_bgcolor='#000000',
+        font=dict(family='JetBrains Mono, monospace', color='#ffffff')
     )
     return fig
 
@@ -682,8 +551,8 @@ def create_nash_equilibrium_viz(equilibrium_data):
             theta=categories,
             fill='toself',
             name='Current State',
-            line=dict(color='#00ff41'),
-            fillcolor='rgba(0, 255, 65, 0.2)'
+            line=dict(color='#ffffff'),
+            fillcolor='rgba(255, 255, 255, 0.2)'
         )
     ])
     
@@ -692,20 +561,19 @@ def create_nash_equilibrium_viz(equilibrium_data):
             radialaxis=dict(
                 visible=True,
                 range=[0, 100],
-                tickfont=dict(color='#00d4ff', family='JetBrains Mono, monospace'),
-                gridcolor='rgba(0, 212, 255, 0.2)'
+                tickfont=dict(color='#ffffff', family='JetBrains Mono, monospace'),
+                gridcolor='#333333'
             ),
             angularaxis=dict(
-                tickfont=dict(color='#00ff41', family='JetBrains Mono, monospace'),
-                gridcolor='rgba(0, 212, 255, 0.2)'
+                tickfont=dict(color='#ffffff', family='JetBrains Mono, monospace'),
+                gridcolor='#333333'
             ),
-            bgcolor='rgba(10, 14, 20, 0.9)'
+            bgcolor='#000000'
         ),
         showlegend=False,
-        title=dict(text=">> NASH_EQUILIBRIUM", font=dict(color='#00ff41', family='JetBrains Mono, monospace')),
-        height=300,
-        paper_bgcolor='rgba(10, 14, 20, 0.9)',
-        font=dict(family='JetBrains Mono, monospace', color='#00d4ff')
+        paper_bgcolor='#000000',
+        font=dict(family='JetBrains Mono, monospace', color='#ffffff'),
+        margin=dict(l=10, r=10, t=10, b=10)
     )
     
     return fig
@@ -730,7 +598,7 @@ def main():
     """, unsafe_allow_html=True)
     
     # Header with terminal prompt style
-    st.markdown('<div class="main-header glitch-text">GAME_THEORY_STOCK_AGENT<span class="cursor"></span></div>', 
+    st.markdown('<div class="main-header">GAME_THEORY_STOCK_AGENT</div>', 
                 unsafe_allow_html=True)
     st.markdown('<p class="sys-msg">AI-Driven Stock Analysis :: Game-Theoretic Principles :: Multi-Agent System v2.0</p>', 
                 unsafe_allow_html=True)
