@@ -5,3 +5,7 @@
 ## 2024-05-23 - Batch Data Fetching
 **Learning:** `yfinance` allows batch fetching via `download(tickers_list)`. This reduces N+1 HTTP requests to 1 request.
 **Action:** Prefer `fetch_batch_data` pattern for pre-loading data when the set of keys (tickers) is known in advance (e.g., in a loop).
+
+## 2024-05-24 - YFinance Info Caching
+**Learning:** `yfinance` does not support efficient batch retrieval for stock metadata (via `.info`). Accessing `.info` triggers an HTTP request per ticker, causing significant N+1 performance issues in loops.
+**Action:** Implement explicit caching for singleton data fetches like `get_stock_info` when batch endpoints are unavailable, especially in stateful apps like Streamlit where objects persist in session state.
