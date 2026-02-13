@@ -67,5 +67,41 @@ class TestStockDataFetcher(unittest.TestCase):
         pd.testing.assert_frame_equal(result, data)
         mock_yf.Ticker.assert_not_called()
 
+    @patch('stock_data.yf')
+    def test_get_stock_info_uses_cache(self, mock_yf):
+        # 1. First call - should hit API
+        mock_ticker = MagicMock()
+        mock_ticker.info = {
+            'symbol': 'AAPL',
+            'longName': 'Apple Inc.',
+            'sector': 'Technology'
+        }
+        mock_yf.Ticker.return_value = mock_ticker
+
+        # Verify cache is empty initially
+        self.assertNotIn('AAPL', self.fetcher.info_cache)
+
+        result1 = self.fetcher.get_stock_info('AAPL')
+
+        # Verify result and cache population
+        self.assertEqual(result1['symbol'], 'AAPL')
+        self.assertIn('AAPL', self.fetcher.info_cache)
+        self.assertEqual(self.fetcher.info_cache['AAPL'], result1)
+
+        # Verify API called once
+        mock_yf.Ticker.assert_called_once_with('AAPL')
+
+        # 2. Second call - should use cache
+        # Reset mock to ensure it's not called again
+        mock_yf.Ticker.reset_mock()
+
+        result2 = self.fetcher.get_stock_info('AAPL')
+
+        # Verify result is same
+        self.assertEqual(result2, result1)
+
+        # Verify API NOT called
+        mock_yf.Ticker.assert_not_called()
+
 if __name__ == '__main__':
     unittest.main()
